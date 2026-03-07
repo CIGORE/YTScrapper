@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YTScraper — YouTube Channel Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f0;
+    --surface: #ffffff;
+    --border: #e2e2da;
+    --border-dark: #c8c8be;
+    --text: #1a1a18;
+    --muted: #888880;
+    --accent: #ff0000;
+    --accent-soft: #fff0f0;
+    --accent-hover: #cc0000;
+    --green: #16a34a;
+    --green-soft: #f0fdf4;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --yellow: #d97706;
+    --yellow-soft: #fffbeb;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-icon svg { width: 18px; height: 18px; fill: white; }
+
+  .logo-text h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-text p { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 580px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { font-size: 13px; font-weight: 500; }
+  .lh { font-size: 12px; color: var(--muted); font-family: var(--mono); font-weight: 400; }
+
+  input, select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border-dark);
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255,0,0,0.07);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 7px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-outline { background: var(--surface); color: var(--text); border-color: var(--border-dark); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { background: #15803d; }
+
+  /* ALERT */
+  .alert {
+    padding: 11px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .alert-info { background: var(--blue-soft); border: 1px solid #bfdbfe; color: #1e40af; }
+  .alert-error { background: #fff0f0; border: 1px solid #fecaca; color: #dc2626; }
+  .alert-success { background: var(--green-soft); border: 1px solid #bbf7d0; color: #166534; }
+
+  /* LOADING */
+  .loading { display: flex; align-items: center; gap: 10px; padding: 20px 0; color: var(--muted); font-size: 14px; }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border-dark);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 640px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 5px; }
+  .stat-value { font-family: var(--mono); font-size: 22px; font-weight: 500; letter-spacing: -0.5px; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 16px; overflow-x: auto; }
+  .tab {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    white-space: nowrap;
+    background: none;
+    font-family: var(--sans);
+    transition: color 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 580px; }
+  thead tr { background: var(--bg); border-bottom: 1px solid var(--border); }
+  th {
+    padding: 9px 13px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 10px 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf8; }
+
+  .td-title { max-width: 260px; }
+  .td-title a {
+    color: var(--text);
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  .td-title a:hover { color: var(--accent); }
+
+  .td-thumb img {
+    width: 72px; height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  .num { font-family: var(--mono); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .badge-red { background: var(--accent-soft); color: var(--accent); }
+  .badge-green { background: var(--green-soft); color: var(--green); }
+  .badge-yellow { background: var(--yellow-soft); color: var(--yellow); }
+
+  .eng-wrap { display: flex; align-items: center; gap: 6px; }
+  .eng-track { flex: 1; height: 4px; background: var(--border); border-radius: 99px; min-width: 40px; }
+  .eng-fill { height: 4px; border-radius: 99px; }
+  .eng-val { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* PAGINATION */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .page-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+  .page-btn {
+    padding: 5px 11px;
+    border: 1px solid var(--border-dark);
+    border-radius: 6px;
+    background: var(--surface);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--bg); }
+  .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* EXPORT ROW */
+  .export-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .export-btns { display: flex; gap: 7px; flex-wrap: wrap; }
+  .result-count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  /* ABOUT */
+  .channel-profile { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+  @media (max-width: 480px) { .channel-profile { flex-direction: column; align-items: center; text-align: center; } }
+  .ch-avatar { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); flex-shrink: 0; }
+  .ch-avatar-ph { width: 68px; height: 68px; border-radius: 50%; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 26px; border: 2px solid var(--border); flex-shrink: 0; }
+  .ch-name { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .ch-handle { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .about-grid { grid-template-columns: 1fr; } }
+  .ai-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+  .ai-val { font-size: 13px; font-family: var(--mono); }
+
+  /* ANALYTICS */
+  .an-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 580px) { .an-grid { grid-template-columns: 1fr; } }
+  .an-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .an-row:last-child { border-bottom: none; }
+
+  /* STEP GUIDE */
+  .guide {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .guide h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .steps { display: flex; flex-direction: column; gap: 9px; }
+  .step { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #333; line-height: 1.5; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+  .step a { color: var(--blue); }
+
+  /* COMMENT SENTIMENT */
+  .sentiment-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 500px) { .sentiment-summary { grid-template-columns: 1fr 1fr; } }
+
+  .sent-card { border-radius: 8px; padding: 12px 14px; text-align: center; }
+  .sent-card.pos { background: var(--green-soft); border: 1px solid #bbf7d0; }
+  .sent-card.neg { background: #fff0f0; border: 1px solid #fecaca; }
+  .sent-card.neu { background: var(--yellow-soft); border: 1px solid #fde68a; }
+  .sent-card-num { font-family: var(--mono); font-size: 24px; font-weight: 500; }
+  .sent-card-num.pos { color: var(--green); }
+  .sent-card-num.neg { color: #dc2626; }
+  .sent-card-num.neu { color: var(--yellow); }
+  .sent-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-top: 2px; }
+
+  .comment-list { display: flex; flex-direction: column; gap: 10px; }
+  .comment-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface); }
+  .comment-item.pos { border-left: 3px solid var(--green); }
+  .comment-item.neg { border-left: 3px solid #dc2626; }
+  .comment-item.neu { border-left: 3px solid var(--yellow); }
+  .comment-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 6px; }
+  .comment-author { font-size: 12px; font-weight: 600; }
+  .comment-date { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .comment-text { font-size: 13px; color: #333; line-height: 1.5; }
+  .comment-likes { font-size: 11px; color: var(--muted); margin-top: 5px; font-family: var(--mono); }
+
+  .sent-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .sent-badge.pos { background: var(--green-soft); color: var(--green); }
+  .sent-badge.neg { background: #fff0f0; color: #dc2626; }
+  .sent-badge.neu { background: var(--yellow-soft); color: var(--yellow); }
+
+  .video-section-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .video-section-title a { color: var(--text); text-decoration: none; }
+  .video-section-title a:hover { color: var(--accent); }
+  .video-comment-section { margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+  .video-comment-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  .sent-bar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+  .sent-bar-pos { height: 100%; background: var(--green); }
+  .sent-bar-neg { height: 100%; background: #dc2626; }
+  .sent-bar-neu { height: 100%; background: var(--yellow); flex: 1; }
+
+  .comment-filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .filter-btn { padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-dark); background: var(--surface); font-family: var(--sans); transition: all 0.12s; }
+  .filter-btn:hover { background: var(--bg); }
+  .filter-btn.f-all { background: var(--text); color: white; border-color: var(--text); }
+  .filter-btn.f-pos { background: var(--green); color: white; border-color: var(--green); }
+  .filter-btn.f-neg { background: #dc2626; color: white; border-color: #dc2626; }
+  .filter-btn.f-neu { background: var(--yellow); color: white; border-color: var(--yellow); }
+
+  .progress-wrap { margin-bottom: 12px; }
+  .progress-track { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 4px; background: var(--accent); border-radius: 99px; transition: width 0.3s; width: 0%; }
+
+
+  /* LIKES & GROWTH TAB */
+  .likes-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  @media(max-width:500px){.likes-grid{grid-template-columns:1fr 1fr;}}
+  .donut-wrap { display:flex; align-items:center; justify-content:center; gap:20px; flex-wrap:wrap; margin:10px 0 16px; }
+  .donut-legend { display:flex; flex-direction:column; gap:6px; }
+  .legend-item { display:flex; align-items:center; gap:7px; font-size:13px; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .growth-timeline { display:flex; flex-direction:column; gap:8px; }
+  .growth-item { display:grid; grid-template-columns:110px 1fr auto; align-items:center; gap:10px; }
+  .growth-bar-outer { height:6px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .growth-bar-inner { height:6px; border-radius:99px; }
+  .likes-video-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .likes-video-row:last-child { border-bottom:none; }
+  .likes-thumb { width:60px; height:34px; object-fit:cover; border-radius:4px; flex-shrink:0; background:var(--border); }
+  .ratio-bar-outer { height:8px; background:#fecaca; border-radius:99px; overflow:hidden; width:100%; }
+  .ratio-bar-inner { height:8px; background:var(--green); border-radius:99px; }
+  .info-note { font-size:12px; color:var(--muted); background:var(--yellow-soft); border:1px solid #fde68a; border-radius:7px; padding:8px 12px; margin-bottom:14px; }
+
+
+  /* GEO TAB */
+  .geo-bar-row { display:grid; grid-template-columns:130px 1fr 60px 50px; align-items:center; gap:10px; padding:5px 0; }
+  .geo-flag { font-size:18px; margin-right:4px; }
+  .geo-bar-outer { height:8px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .geo-bar-inner { height:8px; border-radius:99px; background:var(--accent); }
+  .geo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  @media(max-width:500px){.geo-grid{grid-template-columns:1fr 1fr;}}
+  .lang-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:12px; background:var(--bg); border:1px solid var(--border); margin:3px; }
+
+  /* SEARCH FILTER */
+  /* SCHEDULE TAB */
+  .sched-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:16px; }
+  .sched-cell { border-radius:6px; padding:8px 4px; text-align:center; font-size:11px; font-family:var(--mono); cursor:default; }
+  .sched-day-label { font-size:10px; font-weight:600; text-transform:uppercase; color:var(--muted); text-align:center; margin-bottom:4px; }
+  .hour-row { display:grid; grid-template-columns:50px 1fr; gap:8px; align-items:center; margin-bottom:4px; }
+
+  /* TAGS TAB */
+  .tag-cloud { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+  .tag-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:12px; cursor:pointer; border:1px solid var(--border); background:var(--bg); transition:all .15s; }
+  .tag-chip:hover { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  .tag-count { font-family:var(--mono); font-size:10px; background:rgba(0,0,0,.07); padding:1px 5px; border-radius:99px; }
+
+  /* REVENUE TAB */
+  .cpm-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  @media(max-width:500px){.cpm-grid{grid-template-columns:1fr 1fr;}}
+  .rev-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+  .rev-row:last-child { border-bottom:none; }
+
+  /* SUMMARY TAB */
+  .summary-section { margin-bottom:16px; }
+  .summary-section h3 { font-size:14px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .summary-section p { font-size:13px; color:#444; line-height:1.7; }
+  .summary-section ul { padding-left:18px; font-size:13px; color:#444; line-height:1.8; }
+
+  /* COMPARE TAB */
+  .compare-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .compare-table th { background:var(--bg); padding:10px 12px; text-align:left; font-size:12px; font-weight:600; color:var(--muted); border-bottom:2px solid var(--border); }
+  .compare-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .compare-table tr:last-child td { border-bottom:none; }
+  .compare-table .best { color:var(--green); font-weight:700; }
+  .compare-ch-header { display:flex; align-items:center; gap:8px; }
+  .compare-ch-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; background:var(--border); }
+  .hidden { display: none !important; }
+
+  @media (max-width: 480px) { .app { padding: 16px 14px 48px; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M23.5 6.19a3.02 3.02 0 00-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 00.5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 002.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 002.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>
+    </div>
+    <div class="logo-text">
+      <h1>YTScraper</h1>
+      <p>YouTube Channel Analyzer</p>
+    </div>
+  </div>
+
+  <!-- GUIDE -->
+  <div class="guide" id="guideEl">
+    <h3>🚀 Cara Mendapatkan API Key (Gratis)</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div>Buka <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a> → buat project baru (atau pilih yang ada)</div></div>
+      <div class="step"><div class="step-num">2</div><div>Cari <strong>"YouTube Data API v3"</strong> di Library → klik <strong>Enable</strong></div></div>
+      <div class="step"><div class="step-num">3</div><div>Pergi ke <strong>APIs & Services → Credentials</strong> → klik <strong>Create Credentials → API Key</strong> → copy key-nya</div></div>
+      <div class="step"><div class="step-num">4</div><div>Paste API Key di bawah, masukkan URL channel, lalu klik <strong>Scrape Channel</strong></div></div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="card">
+    <div class="card-title">Konfigurasi</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>YouTube Data API Key <span class="lh">— dari Google Cloud Console</span></label>
+        <input type="password" id="apiKey" placeholder="AIzaSy..." autocomplete="off">
+      </div>
+      <div class="form-group full">
+        <label>URL / Handle / Channel ID <span class="lh">— cth: @namachannel atau UCxxxxxx</span></label>
+        <input type="text" id="channelInput" placeholder="https://youtube.com/@channel  atau  @handle  atau  UCxxxxxxxx">
+      </div>
+      <div class="form-group">
+        <label>Jumlah Video</label>
+        <select id="maxVideos">
+          <option value="10">10 video</option>
+          <option value="25" selected>25 video</option>
+          <option value="50">50 video</option>
+          <option value="100">100 video</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Urutkan Video</label>
+        <select id="sortOrder">
+          <option value="date">Terbaru</option>
+          <option value="viewCount">Terbanyak Ditonton</option>
+          <option value="rating">Rating Tertinggi</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="scrapeBtn" onclick="startScrape()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Scrape Channel
+      </button>
+      <button class="btn btn-outline" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+
+  <!-- ALERT -->
+  <div id="alertArea"></div>
+
+  <!-- LOADING -->
+  <div class="loading hidden" id="loadingEl">
+    <div class="spinner"></div>
+    <span id="loadingText">Mengambil data channel...</span>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden">
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="padding:16px 20px 0;">
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('videos',this)">📹 Video</button>
+          <button class="tab" onclick="switchTab('about',this)">ℹ️ Tentang Channel</button>
+          <button class="tab" onclick="switchTab('analytics',this)">📊 Analitik</button>
+          <button class="tab" onclick="switchTab('comments',this)">💬 Komentar & Sentimen</button>
+          <button class="tab" onclick="switchTab('emails',this)">📧 Email</button>
+          <button class="tab" onclick="switchTab('growth',this)">📈 Pertumbuhan</button>
+          <button class="tab" onclick="switchTab('geo',this)">🌍 Negara</button>
+          <button class="tab" onclick="switchTab('schedule',this)">📅 Jadwal</button>
+          <button class="tab" onclick="switchTab('tags',this)">🏷️ Tags SEO</button>
+          <button class="tab" onclick="switchTab('revenue',this)">💰 Pendapatan</button>
+          <button class="tab" onclick="switchTab('summary',this)">📋 Ringkasan AI</button>
+          <button class="tab" onclick="switchTab('compare',this)">📊 Bandingkan</button>
+        </div>
+      </div>
+
+      <!-- TAB VIDEOS -->
+      <div id="tab-videos" style="padding:14px 20px 20px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <input type="text" id="videoSearch" placeholder="🔍 Cari judul video..." oninput="filterVideos()" style="flex:1;min-width:180px;padding:8px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+          <select id="filterYear" onchange="filterVideos()" style="padding:8px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+            <option value="">Semua Tahun</option>
+          </select>
+          <select id="filterMinViews" onchange="filterVideos()" style="padding:8px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+            <option value="0">Semua Views</option>
+            <option value="1000">Min 1K views</option>
+            <option value="10000">Min 10K views</option>
+            <option value="100000">Min 100K views</option>
+            <option value="1000000">Min 1M views</option>
+          </select>
+          <button class="btn btn-outline" onclick="clearVideoFilter()" style="font-size:12px;padding:7px 12px;">✕ Reset</button>
+        </div>
+        <div class="export-row">
+          <div class="export-btns">
+            <button class="btn btn-green" onclick="exportCSV()">⬇ Export CSV</button>
+            <button class="btn btn-outline" onclick="exportJSON()">⬇ Export JSON</button>
+          </div>
+          <span class="result-count" id="resultCount"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px">Thumb</th>
+                <th onclick="sortTable('title')">Judul ↕</th>
+                <th onclick="sortTable('views')">Views ↕</th>
+                <th onclick="sortTable('likes')">Likes ↕</th>
+                <th onclick="sortTable('comments')">Komentar ↕</th>
+                <th onclick="sortTable('engagement')">Engagement ↕</th>
+                <th onclick="sortTable('duration')">Durasi ↕</th>
+                <th onclick="sortTable('date')">Tanggal ↕</th>
+              </tr>
+            </thead>
+            <tbody id="videoTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="paginationEl"></div>
+      </div>
+
+      <!-- TAB ABOUT -->
+      <div id="tab-about" class="hidden" style="padding:14px 20px 20px;">
+        <div id="aboutContent"></div>
+      </div>
+
+      <!-- TAB ANALYTICS -->
+      <div id="tab-analytics" class="hidden" style="padding:14px 20px 20px;">
+        <div id="analyticsContent"></div>
+      </div>
+
+      <!-- TAB COMMENTS -->
+      <div id="tab-comments" class="hidden" style="padding:14px 20px 20px;">
+        <div style="margin-bottom:14px;">
+          <div class="card-title">Claude AI API Key <span class="lh" style="font-size:11px;">— untuk analisis sentimen (gratis di <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue);">console.anthropic.com</a>)</span></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="password" id="claudeKey" placeholder="sk-ant-..." style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:14px;background:var(--bg);outline:none;" autocomplete="off">
+            <div style="display:flex;gap:8px;">
+              <select id="commentVideoCount" style="padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:14px;background:var(--bg);outline:none;">
+                <option value="5">5 video</option>
+                <option value="10">10 video</option>
+                <option value="25">25 video</option>
+                <option value="50">50 video</option>
+                <option value="100" selected>100 video</option>
+                <option value="9999">Semua video (max scrape)</option>
+              </select>
+              <select id="commentsPerVideo" style="padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:14px;background:var(--bg);outline:none;">
+                <option value="20">20 komentar/video</option>
+                <option value="50" selected>50 komentar/video</option>
+                <option value="100">100 komentar/video</option>
+              </select>
+              <button class="btn btn-primary" onclick="startCommentAnalysis()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Analisis Komentar
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="commentAlertArea"></div>
+        <div class="loading hidden" id="commentLoadingEl">
+          <div class="spinner"></div>
+          <span id="commentLoadingText">Mengambil komentar...</span>
+          <div style="width:100%;max-width:400px;margin-top:10px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
+              <span id="commentProgressLabel">0 / 0 video</span>
+              <span id="commentProgressPct">0%</span>
+            </div>
+            <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden;">
+              <div id="commentProgressBar" style="height:5px;background:var(--accent);border-radius:99px;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;" id="commentProgressStats">
+              Komentar terkumpul: <span id="commentCount">0</span> | Sentimen selesai: <span id="sentimentDone">0</span>
+            </div>
+          </div>
+        </div>
+        <div id="commentResults" class="hidden">
+          <div class="sentiment-summary" id="sentimentSummary"></div>
+          <div class="sent-bar" id="sentimentBar"></div>
+          <div class="comment-filter-row">
+            <span style="font-size:12px;color:var(--muted);">Filter:</span>
+            <button class="filter-btn f-all" onclick="filterComments('all',this)">Semua</button>
+            <button class="filter-btn" onclick="filterComments('pos',this)">😊 Positif</button>
+            <button class="filter-btn" onclick="filterComments('neg',this)">😠 Negatif</button>
+            <button class="filter-btn" onclick="filterComments('neu',this)">😐 Netral</button>
+          </div>
+          <div id="commentList"></div>
+        </div>
+      </div>
+
+      <!-- TAB EMAILS -->
+      <div id="tab-emails" class="hidden" style="padding:14px 20px 20px;">
+        <div style="margin-bottom:14px;">
+          <div class="card-title">Scrape Email</div>
+          <div class="alert alert-info" style="margin-bottom:10px;">
+            <span>ℹ️</span>
+            <span>Email dari <strong>deskripsi channel & video</strong> langsung tersedia setelah scrape. Email dari <strong>komentar</strong> tersedia setelah klik Analisis Komentar di tab sebelumnya. Klik tombol di bawah untuk refresh.</span>
+          </div>
+          <button class="btn btn-primary" onclick="renderEmailTab()">
+            🔍 Cari Email Sekarang
+          </button>
+        </div>
+        <div id="emailContent">
+          <div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;">Klik "Cari Email Sekarang" untuk mulai deteksi email.</div>
+        </div>
+</div>
+
+      <!-- TAB GROWTH -->
+      <div id="tab-growth" class="hidden" style="padding:14px 20px 20px;">
+        <div id="growthContent"></div>
+      </div>
+
+      <!-- TAB GEO -->
+      <div id="tab-geo" class="hidden" style="padding:14px 20px 20px;">
+        <div id="geoContent">
+          <div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;">Klik tab ini setelah scrape &amp; analisis komentar untuk melihat estimasi negara penonton.</div>
+        </div>
+      <!-- TAB SCHEDULE -->
+      <div id="tab-schedule" class="hidden" style="padding:14px 20px 20px;">
+        <div id="scheduleContent"></div>
+      </div>
+
+      <!-- TAB TAGS -->
+      <div id="tab-tags" class="hidden" style="padding:14px 20px 20px;">
+        <div id="tagsContent"></div>
+      </div>
+
+      <!-- TAB REVENUE -->
+      <div id="tab-revenue" class="hidden" style="padding:14px 20px 20px;">
+        <div id="revenueContent"></div>
+      </div>
+
+      <!-- TAB SUMMARY AI -->
+      <div id="tab-summary" class="hidden" style="padding:14px 20px 20px;">
+        <div style="margin-bottom:12px;">
+          <div class="card-title">📋 Ringkasan Channel oleh Claude AI</div>
+          <div class="info-note" style="margin:8px 0;">ℹ️ Claude akan menganalisis semua data channel dan memberikan ringkasan komprehensif — profil audiens, performa konten, rekomendasi, dan peluang kolaborasi brand.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="password" id="claudeKeySummary" placeholder="sk-ant-... (Claude API Key)" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:14px;background:var(--bg);outline:none;">
+            <select id="summaryLang" style="padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:14px;background:var(--bg);">
+              <option value="id">Bahasa Indonesia</option>
+              <option value="en">English</option>
+            </select>
+            <button class="btn btn-primary" onclick="generateSummary()">✨ Generate Ringkasan</button>
+          </div>
+        </div>
+        <div id="summaryAlertArea"></div>
+        <div class="loading hidden" id="summaryLoadingEl"><div class="spinner"></div><span>Claude sedang menganalisis...</span></div>
+        <div id="summaryContent"></div>
+      </div>
+
+      <!-- TAB COMPARE -->
+      <div id="tab-compare" class="hidden" style="padding:14px 20px 20px;">
+        <div style="margin-bottom:14px;">
+          <div class="card-title">📊 Bandingkan Channel</div>
+          <div class="info-note" style="margin:8px 0;">ℹ️ Masukkan hingga 3 channel untuk dibandingkan. Gunakan YouTube API Key yang sama.</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="text" id="compareInput1" placeholder="Channel 1: @handle atau URL" style="flex:1;min-width:180px;padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+              <input type="text" id="compareInput2" placeholder="Channel 2: @handle atau URL" style="flex:1;min-width:180px;padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+              <input type="text" id="compareInput3" placeholder="Channel 3 (opsional)" style="flex:1;min-width:180px;padding:9px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="startCompare()">🔍 Bandingkan Sekarang</button>
+            </div>
+          </div>
+        </div>
+        <div id="compareAlertArea"></div>
+        <div class="loading hidden" id="compareLoadingEl"><div class="spinner"></div><span id="compareLoadingText">Mengambil data channel...</span></div>
+        <div id="compareContent"></div>
+      </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let allVideos = [], allVideosFiltered = [], channelData = {}, currentPage = 1;
+const PER_PAGE = 10;
+let sortKey = 'date', sortDir = 'desc';
+
+// ── UTILS ──
+const fmt = n => {
+  n = parseInt(n); if (isNaN(n)) return '—';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return n.toLocaleString('id');
+};
+const fmtFull = n => n ? parseInt(n).toLocaleString('id') : '—';
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const fmtDur = iso => {
+  if (!iso) return '—';
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return '—';
+  const h=parseInt(m[1]||0), min=parseInt(m[2]||0), s=parseInt(m[3]||0);
+  return h ? `${h}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${min}:${String(s).padStart(2,'0')}`;
+};
+const durSecs = iso => { if(!iso)return 0; const m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m?(parseInt(m[1]||0)*3600+parseInt(m[2]||0)*60+parseInt(m[3]||0)):0; };
+const eng = v => { const vi=parseInt(v.views)||0; return vi ? ((parseInt(v.likes||0)+parseInt(v.comments||0))/vi*100) : 0; };
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function showAlert(msg, type='info') {
+  const ic = {info:'ℹ️',error:'❌',success:'✅'};
+  document.getElementById('alertArea').innerHTML = `<div class="alert alert-${type}"><span>${ic[type]}</span><span>${msg}</span></div>`;
+}
+function clearAlert() { document.getElementById('alertArea').innerHTML=''; }
+function setLoading(v, txt='') { document.getElementById('loadingEl').classList.toggle('hidden',!v); if(txt) document.getElementById('loadingText').textContent=txt; }
+
+// ── PARSE INPUT ──
+function parseInput(s) {
+  s = s.trim();
+  let m;
+  if ((m=s.match(/youtube\.com\/@([^/?&\s]+)/))) return {type:'handle',val:m[1]};
+  if ((m=s.match(/youtube\.com\/channel\/(UC[^/?&\s]+)/))) return {type:'id',val:m[1]};
+  if ((m=s.match(/youtube\.com\/(?:c|user)\/([^/?&\s]+)/))) return {type:'user',val:m[1]};
+  if ((m=s.match(/^@(.+)$/))) return {type:'handle',val:m[1]};
+  if (s.startsWith('UC')) return {type:'id',val:s};
+  return {type:'user',val:s};
+}
+
+// ── API ──
+const YT = 'https://www.googleapis.com/youtube/v3';
+
+async function ytGet(url) {
+  const r = await fetch(url);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d;
+}
+
+async function getChannel(apiKey, input) {
+  const p = parseInput(input);
+  let url;
+  if (p.type==='handle') url=`${YT}/channels?part=snippet,statistics,brandingSettings,contentDetails&forHandle=${encodeURIComponent(p.val)}&key=${apiKey}`;
+  else if (p.type==='id') url=`${YT}/channels?part=snippet,statistics,brandingSettings,contentDetails&id=${encodeURIComponent(p.val)}&key=${apiKey}`;
+  else url=`${YT}/channels?part=snippet,statistics,brandingSettings,contentDetails&forUsername=${encodeURIComponent(p.val)}&key=${apiKey}`;
+
+  const d = await ytGet(url);
+  if (!d.items?.length) {
+    if (p.type==='user') {
+      const d2 = await ytGet(`${YT}/channels?part=snippet,statistics,brandingSettings,contentDetails&forHandle=${encodeURIComponent(p.val)}&key=${apiKey}`);
+      if (!d2.items?.length) throw new Error(`Channel "${p.val}" tidak ditemukan.`);
+      return d2.items[0];
+    }
+    throw new Error(`Channel tidak ditemukan.`);
+  }
+  return d.items[0];
+}
+
+async function getVideos(apiKey, playlistId, maxResults) {
+  let items = [], pageToken = '';
+  while (items.length < maxResults) {
+    const batch = Math.min(50, maxResults - items.length);
+    let url = `${YT}/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=${batch}&key=${apiKey}`;
+    if (pageToken) url += `&pageToken=${pageToken}`;
+    const d = await ytGet(url);
+    if (!d.items?.length) break;
+    items.push(...d.items);
+    pageToken = d.nextPageToken||'';
+    if (!pageToken) break;
+  }
+
+  const ids = items.map(v=>v.contentDetails.videoId).filter(Boolean);
+  if (!ids.length) return [];
+
+  const statsMap = {};
+  for (let i=0;i<ids.length;i+=50) {
+    const chunk = ids.slice(i,i+50).join(',');
+    const d = await ytGet(`${YT}/videos?part=statistics,contentDetails,snippet&id=${chunk}&key=${apiKey}`);
+    d.items?.forEach(v => statsMap[v.id]=v);
+  }
+
+  return ids.map(id => {
+    const pi = items.find(v=>v.contentDetails.videoId===id);
+    const vi = statsMap[id];
+    return {
+      id,
+      title: vi?.snippet?.title || pi?.snippet?.title || '',
+      thumbnail: vi?.snippet?.thumbnails?.medium?.url || pi?.snippet?.thumbnails?.medium?.url || '',
+      publishedAt: vi?.snippet?.publishedAt || '',
+      duration: vi?.contentDetails?.duration || '',
+      views: vi?.statistics?.viewCount || 0,
+      likes: vi?.statistics?.likeCount || 0,
+      comments: vi?.statistics?.commentCount || 0,
+      description: vi?.snippet?.description || '',
+      tags: vi?.snippet?.tags || [],
+    };
+  });
+}
+
+// ── MAIN ──
+async function startScrape() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const channelInput = document.getElementById('channelInput').value.trim();
+  const maxVideos = parseInt(document.getElementById('maxVideos').value);
+
+  if (!apiKey) { showAlert('Masukkan API Key YouTube terlebih dahulu.','error'); return; }
+  if (!channelInput) { showAlert('Masukkan URL atau username channel.','error'); return; }
+
+  clearAlert();
+  document.getElementById('results').classList.add('hidden');
+  setLoading(true,'Mengambil data channel...');
+  document.getElementById('scrapeBtn').disabled = true;
+
+  try {
+    const ch = await getChannel(apiKey, channelInput);
+    channelData = ch;
+    const uploadsId = ch.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsId) throw new Error('Tidak dapat menemukan playlist uploads channel ini.');
+
+    setLoading(true,`Mengambil ${maxVideos} video...`);
+    allVideos = await getVideos(apiKey, uploadsId, maxVideos);
+
+    setLoading(false);
+    document.getElementById('guideEl').classList.add('hidden');
+    renderAll();
+    showAlert(`Berhasil! Ditemukan <strong>${allVideos.length} video</strong> dari channel <strong>${esc(ch.snippet.title)}</strong>`,'success');
+    // Email tab will render when user clicks it
+  } catch(e) {
+    setLoading(false);
+    showAlert(`Error: ${e.message}`,'error');
+  }
+
+  document.getElementById('scrapeBtn').disabled = false;
+}
+
+// ── RENDER ──
+function renderAll() {
+  allVideosFiltered = [];
+  renderStats();
+  renderVideos();
+  renderAbout();
+  renderAnalytics();
+  populateYearFilter();
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function renderStats() {
+  const s = channelData.statistics||{};
+  const avgV = allVideos.length ? Math.round(allVideos.reduce((a,v)=>a+parseInt(v.views||0),0)/allVideos.length) : 0;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Subscribers</div><div class="stat-value">${fmt(s.subscriberCount)}</div><div class="stat-sub">${s.hiddenSubscriberCount?'disembunyikan':fmtFull(s.subscriberCount)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Views</div><div class="stat-value">${fmt(s.viewCount)}</div><div class="stat-sub">${fmtFull(s.viewCount)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Video</div><div class="stat-value">${fmt(s.videoCount)}</div><div class="stat-sub">video publik</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Views</div><div class="stat-value">${fmt(avgV)}</div><div class="stat-sub">per video (${allVideos.length} sampel)</div></div>`;
+}
+
+function sortedVideos() {
+  const source = allVideosFiltered.length ? allVideosFiltered : allVideos;
+  return [...source].sort((a,b) => {
+    if (sortKey==='title') { const va=a.title.toLowerCase(),vb=b.title.toLowerCase(); return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va); }
+    let va, vb;
+    if (sortKey==='date') { va=new Date(a.publishedAt); vb=new Date(b.publishedAt); }
+    else if (sortKey==='views') { va=parseInt(a.views||0); vb=parseInt(b.views||0); }
+    else if (sortKey==='likes') { va=parseInt(a.likes||0); vb=parseInt(b.likes||0); }
+    else if (sortKey==='comments') { va=parseInt(a.comments||0); vb=parseInt(b.comments||0); }
+    else if (sortKey==='engagement') { va=eng(a); vb=eng(b); }
+    else if (sortKey==='duration') { va=durSecs(a.duration); vb=durSecs(b.duration); }
+    return sortDir==='asc'? va-vb : vb-va;
+  });
+}
+
+function renderVideos() {
+  const sorted = sortedVideos();
+  const total = sorted.length;
+  const totalPages = Math.ceil(total/PER_PAGE)||1;
+  if (currentPage>totalPages) currentPage=1;
+  const page = sorted.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+
+  document.getElementById('resultCount').textContent = `${total} video`;
+  document.getElementById('videoTbody').innerHTML = page.map(v => {
+    const e = eng(v);
+    const ep = Math.min(e,20)/20*100;
+    const ec = e>=5?'#16a34a':e>=2?'#d97706':'#ef4444';
+    return `<tr>
+      <td class="td-thumb"><a href="https://youtube.com/watch?v=${v.id}" target="_blank"><img src="${v.thumbnail}" loading="lazy" onerror="this.style.opacity=0"></a></td>
+      <td class="td-title"><a href="https://youtube.com/watch?v=${v.id}" target="_blank">${esc(v.title)}</a></td>
+      <td><span class="num">${fmt(v.views)}</span></td>
+      <td><span class="num">${fmt(v.likes)}</span></td>
+      <td><span class="num">${fmt(v.comments)}</span></td>
+      <td><div class="eng-wrap"><div class="eng-track"><div class="eng-fill" style="width:${ep}%;background:${ec}"></div></div><span class="eng-val">${e.toFixed(2)}%</span></div></td>
+      <td><span class="num">${fmtDur(v.duration)}</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px;">${fmtDate(v.publishedAt)}</td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('paginationEl');
+  if (totalPages<=1) { el.innerHTML=''; return; }
+  let btns='';
+  for (let i=1;i<=totalPages;i++) {
+    if (i===1||i===totalPages||(i>=currentPage-2&&i<=currentPage+2)) {
+      btns+=`<button class="page-btn${i===currentPage?' active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i===currentPage-3||i===currentPage+3) {
+      btns+=`<span style="padding:0 3px;color:var(--muted)">…</span>`;
+    }
+  }
+  el.innerHTML=`<span>Halaman ${currentPage} dari ${totalPages}</span><div class="page-btns"><button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Prev</button>${btns}<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next →</button></div>`;
+}
+
+function goPage(p) {
+  const tp = Math.ceil(allVideos.length/PER_PAGE)||1;
+  if (p<1||p>tp) return;
+  currentPage=p; renderVideos();
+}
+
+function sortTable(key) {
+  if (sortKey===key) sortDir=sortDir==='asc'?'desc':'asc';
+  else { sortKey=key; sortDir='desc'; }
+  currentPage=1; renderVideos();
+}
+
+function renderAbout() {
+  const s = channelData.snippet||{}, b = channelData.brandingSettings?.channel||{};
+  document.getElementById('aboutContent').innerHTML = `
+    <div class="channel-profile">
+      ${s.thumbnails?.default?.url ? `<img src="${s.thumbnails.high?.url||s.thumbnails.default.url}" class="ch-avatar" alt="">` : `<div class="ch-avatar-ph">▶</div>`}
+      <div>
+        <div class="ch-name">${esc(s.title||'')}</div>
+        <div class="ch-handle">${s.customUrl?'@'+s.customUrl.replace('@',''):channelData.id}</div>
+        ${s.country?`<span class="badge badge-red">🌏 ${s.country}</span>`:''}
+      </div>
+    </div>
+    <div class="about-grid" style="margin-bottom:16px;">
+      <div><div class="ai-label">Channel ID</div><div class="ai-val" style="font-size:12px;">${channelData.id}</div></div>
+      <div><div class="ai-label">Dibuat</div><div class="ai-val">${fmtDate(s.publishedAt)}</div></div>
+      <div><div class="ai-label">Bahasa</div><div class="ai-val">${s.defaultLanguage||b.defaultLanguage||'—'}</div></div>
+      <div><div class="ai-label">Negara</div><div class="ai-val">${s.country||'—'}</div></div>
+    </div>
+    ${s.description?`<div style="margin-bottom:14px;"><div class="card-title">Deskripsi</div><div style="font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap;max-height:130px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;padding:10px 12px;background:var(--bg);">${esc(s.description)}</div></div>`:''}
+    ${b.keywords?`<div><div class="card-title">Keywords</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${b.keywords.split('"').filter(k=>k.trim()&&k.trim()!==',').map(k=>`<span class="badge badge-yellow">${esc(k.trim())}</span>`).join('')}</div></div>`:''}
+  `;
+}
+
+function renderAnalytics() {
+  if (!allVideos.length) return;
+  const top5 = [...allVideos].sort((a,b)=>parseInt(b.views)-parseInt(a.views)).slice(0,5);
+  const maxV = parseInt(top5[0]?.views)||1;
+  const topEng = [...allVideos].sort((a,b)=>eng(b)-eng(a)).slice(0,3);
+  const total = len => allVideos.reduce((a,v)=>a+parseInt(v[len]||0),0);
+  const tv=total('views'), tl=total('likes'), tc=total('comments');
+  const avgEng = allVideos.reduce((a,v)=>a+eng(v),0)/allVideos.length;
+
+  document.getElementById('analyticsContent').innerHTML = `
+    <div class="an-grid">
+      <div>
+        <div class="card-title">Rata-rata per Video (${allVideos.length} video)</div>
+        <div class="an-row"><span style="color:var(--muted)">Views</span><span class="num">${fmt(Math.round(tv/allVideos.length))}</span></div>
+        <div class="an-row"><span style="color:var(--muted)">Likes</span><span class="num">${fmt(Math.round(tl/allVideos.length))}</span></div>
+        <div class="an-row"><span style="color:var(--muted)">Komentar</span><span class="num">${fmt(Math.round(tc/allVideos.length))}</span></div>
+        <div class="an-row"><span style="color:var(--muted)">Engagement Rate</span><span class="num" style="color:var(--green)">${avgEng.toFixed(2)}%</span></div>
+      </div>
+      <div>
+        <div class="card-title">Engagement Rate Terbaik</div>
+        ${topEng.map((v,i)=>`
+          <div class="an-row" style="gap:8px;">
+            <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0;">#${i+1}</span>
+              <a href="https://youtube.com/watch?v=${v.id}" target="_blank" style="font-size:12px;color:var(--text);text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(v.title)}</a>
+            </div>
+            <span class="badge badge-green" style="flex-shrink:0;">${eng(v).toFixed(1)}%</span>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="card-title">Top 5 Video Paling Banyak Ditonton</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${top5.map((v,i)=>{
+          const pct=parseInt(v.views)/maxV*100;
+          return `<div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0;">#${i+1}</span>
+                <a href="https://youtube.com/watch?v=${v.id}" target="_blank" style="font-size:13px;color:var(--text);text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(v.title)}</a>
+              </div>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--muted);flex-shrink:0;">${fmt(v.views)}</span>
+            </div>
+            <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden;">
+              <div style="height:5px;width:${pct}%;background:var(--accent);border-radius:99px;"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── TAB ──
+function switchTab(name, btn) {
+  ['videos','about','analytics','comments','emails','growth','geo','schedule','tags','revenue','summary','compare'].forEach(t=>document.getElementById('tab-'+t).classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  btn.classList.add('active');
+  if (name==='growth') renderGrowth();
+  if (name==='geo') renderGeo();
+  if (name==='schedule') renderSchedule();
+  if (name==='tags') renderTags();
+  if (name==='revenue') renderRevenue();
+  if (name==='emails') renderEmailTab();
+  if (name==='analytics') renderAnalytics();
+}
+
+// ── EXPORT ──
+function exportCSV() {
+  if (!allVideos.length) return;
+  const headers = ['No','ID','Judul','Views','Likes','Komentar','Engagement%','Durasi','Tanggal','URL'];
+  const rows = allVideos.map((v,i)=>[i+1, v.id, `"${(v.title||'').replace(/"/g,'""')}"`, v.views, v.likes, v.comments, eng(v).toFixed(2), fmtDur(v.duration), fmtDate(v.publishedAt), `https://youtube.com/watch?v=${v.id}`]);
+  dl([headers,...rows].map(r=>r.join(',')).join('\n'), `${channelData.snippet?.title||'channel'}_videos.csv`, 'text/csv');
+}
+
+function exportJSON() {
+  if (!allVideos.length) return;
+  const data = {
+    channel: { id:channelData.id, title:channelData.snippet?.title, handle:channelData.snippet?.customUrl, subscribers:channelData.statistics?.subscriberCount, totalViews:channelData.statistics?.viewCount, totalVideos:channelData.statistics?.videoCount, country:channelData.snippet?.country, createdAt:channelData.snippet?.publishedAt },
+    videos: allVideos.map(v=>({ id:v.id, title:v.title, url:`https://youtube.com/watch?v=${v.id}`, thumbnail:v.thumbnail, views:parseInt(v.views||0), likes:parseInt(v.likes||0), comments:parseInt(v.comments||0), engagementRate:parseFloat(eng(v).toFixed(2)), duration:fmtDur(v.duration), publishedAt:v.publishedAt, tags:v.tags })),
+    exportedAt: new Date().toISOString(), totalVideos: allVideos.length
+  };
+  dl(JSON.stringify(data,null,2), `${channelData.snippet?.title||'channel'}_data.json`, 'application/json');
+}
+
+function dl(content, filename, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download = filename; a.click();
+}
+
+function resetAll() {
+  allVideos=[]; channelData={}; currentPage=1;
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('guideEl').classList.remove('hidden');
+  clearAlert();
+  document.getElementById('channelInput').value='';
+}
+
+
+// ── COMMENTS & SENTIMENT ──
+let allComments = []; // [{videoId, videoTitle, author, text, likes, date, sentiment}]
+let commentFilter = 'all';
+
+async function getComments(apiKey, videoId, maxResults=20) {
+  try {
+    const url = `${YT}/commentThreads?part=snippet&videoId=${videoId}&maxResults=${maxResults}&order=relevance&key=${apiKey}`;
+    const d = await ytGet(url);
+    return (d.items||[]).map(item => {
+      const c = item.snippet.topLevelComment.snippet;
+      return {
+        author: c.authorDisplayName,
+        text: c.textDisplay.replace(/<br>/g,'\n').replace(/<[^>]+>/g,''),
+        likes: c.likeCount||0,
+        date: c.publishedAt,
+        videoId
+      };
+    });
+  } catch(e) { return []; }
+}
+
+// ── KEYWORD FALLBACK SENTIMENT ──
+function keywordSentiment(text) {
+  const t = text.toLowerCase();
+  const posWords = [
+    // Indonesia positif
+    'bagus','keren','mantap','mantul','mantapp','mantabbb','luar biasa','hebat','dahsyat',
+    'canggih','kece','top','terbaik','terpercaya','terjamin','juara','champion','jago',
+    'suka','senang','bahagia','gembira','puas','bersyukur','alhamdulillah','syukur',
+    'terima kasih','makasih','makasih banyak','thanks','thank you','thx','ty',
+    'recommended','rekomen','rekomendasikan','wajib nonton','wajib tonton','harus nonton',
+    'membantu','sangat membantu','berguna','bermanfaat','informatif','edukatif','inspiratif',
+    'sukses','berhasil','bangga','semangat','motivasi','termotivasi','terinspirasi',
+    'setuju','bener banget','betul','tepat','pas','cocok','sesuai','relevan',
+    'kualitas','berkualitas','bagus banget','keren banget','mantap banget','top banget',
+    'lucu','kocak','ngakak','ngakaks','wkwk','wkwkwk','haha','hehe','hihi','xixi',
+    'sip','oke','ok banget','siip','sipp','okee','aman','oke banget',
+    'keren abis','keren parah','mantap jiwa','luar biasa banget','wow banget',
+    'kaget','takjub','kagum','menakjubkan','spektakuler','luar biasa sekali',
+    'belajar banyak','nambah ilmu','nambah wawasan','tambah ilmu','ilmunya',
+    'nunggu','ditunggu','kapan lagi','lanjutin','lanjutkan','terus berkarya',
+    'keep it up','keep up','good job','nice','great','well done','bravo',
+    // English positif
+    'good','great','awesome','amazing','excellent','wonderful','fantastic','brilliant',
+    'perfect','superb','outstanding','exceptional','incredible','unbelievable','magnificent',
+    'love','loved','enjoy','enjoyed','like','liked','adore','appreciate','appreciated',
+    'happy','glad','pleased','satisfied','delighted','thrilled','excited','grateful',
+    'helpful','useful','valuable','informative','educational','inspiring','motivating',
+    'recommend','recommended','worth','worthwhile','must watch','must see',
+    'beautiful','gorgeous','stunning','impressive','creative','innovative','talented',
+    'best','top','number one','number 1','no 1','#1','first class','world class',
+    'fun','funny','entertaining','hilarious','clever','smart','genius','legendary',
+    'clear','easy to understand','well explained','well done','nicely done',
+    // Emoji positif
+    '👍','👍🏻','👍🏼','👍🏽','👍🏾','👍🏿','❤️','❤','🧡','💛','💚','💙','💜','🖤','🤍','🤎',
+    '😍','🥰','😘','😊','😁','😀','🤩','🥳','🎉','🎊','✅','💯','🔥','⭐','🌟','💫',
+    '👏','🙌','🤝','💪','🙏','✨','🚀','💡','🏆','🥇','💎','👑'
+  ];
+  const negWords = [
+    // Indonesia negatif
+    'jelek','buruk','parah','payah','zonk','sampah','busuk','berantakan',
+    'tidak suka','ga suka','gak suka','nggak suka','ndak suka','kurang suka',
+    'mengecewakan','kecewa','sedih','marah','kesal','jengkel','sebel','sebal',
+    'bohong','tipu','nipu','menipu','penipuan','scam','fraud','hoax','palsu','fake',
+    'spam','iklan','promosi terus','jualan terus','endorse terus',
+    'membosankan','bosan','monoton','ngantuk','ngebosenin','sama aja',
+    'tidak berguna','ga berguna','gak berguna','percuma','sia-sia','buang waktu',
+    'lambat','lelet','lemot','pelan banget','lama banget','slow banget',
+    'mahal','kemahalan','terlalu mahal','ga worth','gak worth','tidak worth',
+    'rugi','nyesel','menyesal','sayang duit','buang duit','boncos',
+    'gagal','fail','error','broken','bug','tidak bisa','ga bisa','gak bisa',
+    'jangan','hindari','avoid','skip','lewatin','gausah','ga usah','gak usah',
+    'tidak recommended','not recommended','jangan beli','jangan subscribe',
+    'benci','hate','muak','eneg','ilfil','antipati',
+    'menggangu','mengganggu','nyebelin','menyebalkan','bikin emosi','bikin kesel',
+    'menipu','bohongin','dibohongi','ditipu','kena tipu','tertipu',
+    'tidak jelas','ga jelas','gak jelas','membingungkan','confusing','ribet',
+    'overrated','lebay','berlebihan','hiperbola','clickbait','judulnya clickbait',
+    'tidak sesuai judul','ga sesuai','beda sama judulnya',
+    'buang waktu','waste of time','worthless','useless',
+    // English negatif
+    'bad','terrible','awful','horrible','dreadful','appalling','disgusting','pathetic',
+    'worst','waste','useless','pointless','worthless','garbage','trash','rubbish',
+    'boring','dull','tedious','monotonous','repetitive','uninspiring',
+    'disappointed','disappointing','frustrating','annoying','irritating',
+    'misleading','clickbait','fake','false','wrong','incorrect','inaccurate',
+    'slow','laggy','broken','buggy','glitchy',
+    'expensive','overpriced','not worth','waste of money',
+    'regret','regretted','mistake','fail','failed','failure',
+    'hate','dislike','disliked','avoid','skip','unsubscribe',
+    'scam','fraud','lie','lied','mislead','deceive','deceived',
+    // Emoji negatif
+    '👎','👎🏻','👎🏼','👎🏽','👎🏾','👎🏿','😡','🤬','😤','😠','🤮','🤢','💔',
+    '😞','😟','😢','😭','😩','😫','🤦','🤦‍♂️','🤦‍♀️','🚫','❌','⛔','🗑️'
+  ];
+  let posScore = 0, negScore = 0;
+  posWords.forEach(w => { if (t.includes(w.toLowerCase())) posScore++; });
+  negWords.forEach(w => { if (t.includes(w.toLowerCase())) negScore++; });
+  // Weight: more specific multi-word phrases count double
+  const posPhrase = ['luar biasa','terima kasih','sangat membantu','wajib nonton','recommended banget','bagus banget','keren banget','mantap banget'];
+  const negPhrase = ['tidak suka','ga suka','gak suka','tidak berguna','ga berguna','buang waktu','kena tipu','tidak recommended','waste of time','clickbait'];
+  posPhrase.forEach(w => { if (t.includes(w)) posScore++; });
+  negPhrase.forEach(w => { if (t.includes(w)) negScore++; });
+  if (posScore > negScore) return 'pos';
+  if (negScore > posScore) return 'neg';
+  return 'neu';
+}
+
+// Track if Claude API is usable this session
+let _claudeApiOk = null; // null=untested, true=ok, false=disabled
+
+async function checkClaudeKey(claudeKey) {
+  if (!claudeKey) return false;
+  if (_claudeApiOk === false) return false; // already failed, skip
+  if (_claudeApiOk === true) return true;
+  // Test with a tiny request
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'hi' }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      _claudeApiOk = false;
+      return false;
+    }
+    _claudeApiOk = true;
+    return true;
+  } catch(e) {
+    _claudeApiOk = false;
+    return false;
+  }
+}
+
+async function analyzeSentiment(claudeKey, comments) {
+  // If no key or API already known to be down → keyword only
+  if (!claudeKey || _claudeApiOk === false) {
+    return comments.map((c, i) => ({ index: i+1, sentiment: keywordSentiment(c.text) }));
+  }
+
+  const texts = comments.map((c,i) => `${i+1}. "${c.text.slice(0,200).replace(/"/g,"'")}"`).join('\n');
+  const prompt = `Kamu adalah analis sentimen komentar YouTube berbahasa Indonesia dan Inggris.
+Analisis setiap komentar berikut dan tentukan sentimennya:
+- "pos" = komentar positif (pujian, terima kasih, setuju, senang, suka, kagum)
+- "neg" = komentar negatif (kritik, keluhan, kecewa, marah, tidak suka, menyesal)
+- "neu" = komentar netral (pertanyaan, informasi biasa, tidak ada emosi jelas)
+PENTING: Jawab HANYA dengan JSON array murni, tidak ada teks lain, tidak ada markdown.
+Format: [{"index":1,"sentiment":"pos"},{"index":2,"sentiment":"neg"}]
+Komentar:
+${texts}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        system: 'You are a sentiment analyzer. Always respond with ONLY a valid JSON array, no markdown, no explanation.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      // Mark API as unusable for the rest of this session
+      _claudeApiOk = false;
+      return comments.map((c, i) => ({ index: i+1, sentiment: keywordSentiment(c.text) }));
+    }
+    _claudeApiOk = true;
+    const raw = data.content.map(b => b.text||'').join('').trim();
+    const clean = raw.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    const results = JSON.parse(clean);
+    const mapped = {};
+    results.forEach(r => { mapped[r.index] = r.sentiment; });
+    return comments.map((c, i) => ({
+      index: i+1,
+      sentiment: mapped[i+1] || keywordSentiment(c.text)
+    }));
+  } catch(e) {
+    _claudeApiOk = false;
+    return comments.map((c, i) => ({ index: i+1, sentiment: keywordSentiment(c.text) }));
+  }
+}
+
+
+// ── EMAIL & CONTACT EXTRACTION ──
+const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+const EMAIL_OBFUS = /[a-zA-Z0-9._%+\-]+\s*(?:\[at\]|\(at\)|\bat\b)\s*[a-zA-Z0-9.\-]+\s*(?:\[dot\]|\(dot\)|\bdot\b)\s*[a-zA-Z]{2,}/gi;
+// Phone: +62xxx, 08xxx, (021)xxx, various formats
+const PHONE_REGEX = /(?:(?:\+|00)62|\(0\d{1,3}\)|0)\s*[\d\s\-\.]{7,15}\d/g;
+// Social handles in bio: ig: @x, twitter: @x, tiktok: @x, wa: 08x
+const IG_REGEX = /(?:ig|instagram|insta)\s*[:\-]?\s*@?([a-zA-Z0-9_.]{3,30})/gi;
+const TT_REGEX = /(?:tiktok|tt)\s*[:\-]?\s*@?([a-zA-Z0-9_.]{3,30})/gi;
+const WA_REGEX = /(?:wa|whatsapp|whats app|hubungi)\s*[:\-]?\s*(?:\+?62|0)[\d\s\-]{8,15}/gi;
+
+function extractEmails(text) {
+  if (!text) return [];
+  const found = new Set();
+  const m1 = text.match(EMAIL_REGEX) || [];
+  m1.forEach(e => {
+    // Filter out common false positives
+    if (!e.includes('example.') && !e.includes('youtu') && !e.includes('google') && !e.endsWith('.png') && !e.endsWith('.jpg')) {
+      found.add(e.toLowerCase());
+    }
+  });
+  const m2 = text.match(EMAIL_OBFUS) || [];
+  m2.forEach(e => {
+    const clean = e.replace(/\s*(?:\[at\]|\(at\)|\bat\b)\s*/gi,'@')
+                   .replace(/\s*(?:\[dot\]|\(dot\)|\bdot\b)\s*/gi,'.').toLowerCase();
+    found.add(clean);
+  });
+  return [...found];
+}
+
+function extractPhones(text) {
+  if (!text) return [];
+  const found = new Set();
+  const m = text.match(PHONE_REGEX) || [];
+  m.forEach(p => found.add(p.replace(/\s+/g,'')));
+  return [...found];
+}
+
+function extractSocials(text) {
+  if (!text) return [];
+  const found = [];
+  let m;
+  const ig = new RegExp(IG_REGEX.source, 'gi');
+  while ((m = ig.exec(text)) !== null) found.push({type:'instagram', handle:'@'+m[1]});
+  const tt = new RegExp(TT_REGEX.source, 'gi');
+  while ((m = tt.exec(text)) !== null) found.push({type:'tiktok', handle:'@'+m[1]});
+  const wa = new RegExp(WA_REGEX.source, 'gi');
+  while ((m = wa.exec(text)) !== null) found.push({type:'whatsapp', handle: m[0].trim()});
+  return found;
+}
+
+// Global contact store
+let allContactData = {emails:[], phones:[], socials:[]};
+
+function scrapeAllContacts() {
+  const emails = [], phones = [], socials = [];
+  const seenEmail = new Set(), seenPhone = new Set(), seenSocial = new Set();
+
+  function addEmails(text, source, videoId) {
+    extractEmails(text).forEach(e => {
+      emails.push({email:e, source, context:text.slice(0,120), videoId});
+      seenEmail.add(e);
+    });
+  }
+  function addPhones(text, source, videoId) {
+    extractPhones(text).forEach(p => {
+      if (!seenPhone.has(p)) { seenPhone.add(p); phones.push({phone:p, source, context:text.slice(0,120), videoId}); }
+    });
+  }
+  function addSocials(text, source, videoId) {
+    extractSocials(text).forEach(s => {
+      const key = s.type+':'+s.handle;
+      if (!seenSocial.has(key)) { seenSocial.add(key); socials.push({...s, source, context:text.slice(0,120), videoId}); }
+    });
+  }
+
+  // Channel description
+  const chDesc = channelData?.snippet?.description || '';
+  addEmails(chDesc, 'Deskripsi Channel');
+  addPhones(chDesc, 'Deskripsi Channel');
+  addSocials(chDesc, 'Deskripsi Channel');
+
+  // Channel keywords
+  const chKw = channelData?.brandingSettings?.channel?.keywords || '';
+  addEmails(chKw, 'Keywords Channel');
+
+  // Video descriptions
+  allVideos.forEach(v => {
+    const d = v.description || '';
+    addEmails(d, `Video: ${v.title.slice(0,50)}`, v.id);
+    addPhones(d, `Video: ${v.title.slice(0,50)}`, v.id);
+    addSocials(d, `Video: ${v.title.slice(0,50)}`, v.id);
+  });
+
+  // Comments
+  allComments.forEach(c => {
+    addEmails(c.text||'', `Komentar: ${c.author}`, c.videoId);
+    addPhones(c.text||'', `Komentar: ${c.author}`, c.videoId);
+  });
+
+  allContactData = {emails, phones, socials};
+  return allContactData;
+}
+
+function scrapeEmailsFromChannel() {
+  const data = scrapeAllContacts();
+  return data.emails.filter(e => !e.source.startsWith('Komentar'));
+}
+function scrapeEmailsFromComments() {
+  const data = scrapeAllContacts();
+  return data.emails.filter(e => e.source.startsWith('Komentar'));
+}
+
+function renderEmailTab() {
+  const el = document.getElementById('emailContent');
+  if (!allVideos.length && !channelData.id) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;">⏳ Scrape channel terlebih dahulu.</div>`;
+    return;
+  }
+
+  const {emails, phones, socials} = scrapeAllContacts();
+
+  // Group emails by address
+  const emailMap = {};
+  emails.forEach(e => {
+    if (!emailMap[e.email]) emailMap[e.email] = {email:e.email, sources:[]};
+    emailMap[e.email].sources.push(e);
+  });
+  const uniqueEmails = Object.values(emailMap);
+  const uniquePhones = phones;
+  const uniqueSocials = socials;
+
+  const debugInfo = `Channel desc: ${(channelData?.snippet?.description||'').length} chars | Videos: ${allVideos.length} | Comments: ${allComments.length}`;
+
+  const tabContent = (type) => {
+    if (type === 'email') {
+      if (!uniqueEmails.length) return `<div style="text-align:center;padding:24px;color:var(--muted);">📭 Tidak ada email ditemukan.<br><span style="font-size:11px;font-family:var(--mono);color:#bbb;margin-top:6px;display:block;">${debugInfo}</span></div>`;
+      return uniqueEmails.map(entry => {
+        const badges = [...new Set(entry.sources.map(s => s.source.startsWith('Komentar')?'💬 Komentar':s.source.startsWith('Video:')?'🎬 Video':'📺 Channel'))];
+        return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface);margin-bottom:8px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap;">
+                <a href="mailto:${esc(entry.email)}" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);text-decoration:none;">${esc(entry.email)}</a>
+                ${badges.map(b=>`<span style="font-size:11px;background:var(--blue-soft);color:var(--blue);padding:1px 7px;border-radius:4px;font-weight:500;">${b}</span>`).join('')}
+                ${entry.sources.length>1?`<span style="font-size:11px;background:var(--yellow-soft);color:var(--yellow);padding:1px 7px;border-radius:4px;">📌 ${entry.sources.length}x</span>`:''}
+              </div>
+              ${entry.sources.slice(0,2).map(s=>`<div style="font-size:11px;color:var(--muted);margin-bottom:1px;">📍 ${esc(s.source)}${s.context?` — <em style="color:#888;">"${esc(s.context.slice(0,70))}"</em>`:''}</div>`).join('')}
+              ${entry.sources.length>2?`<div style="font-size:11px;color:var(--muted);">+${entry.sources.length-2} sumber lagi</div>`:''}
+            </div>
+            <button onclick="navigator.clipboard.writeText('${entry.email}').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 Copy',1500)})" style="padding:5px 10px;border:1px solid var(--border-dark);border-radius:5px;background:var(--bg);font-size:12px;cursor:pointer;flex-shrink:0;">📋 Copy</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    if (type === 'phone') {
+      if (!uniquePhones.length) return `<div style="text-align:center;padding:24px;color:var(--muted);">📵 Tidak ada nomor telepon/WA ditemukan.</div>`;
+      return uniquePhones.map(p=>`
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface);margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);margin-bottom:4px;">📞 ${esc(p.phone)}</div>
+            <div style="font-size:11px;color:var(--muted);">📍 ${esc(p.source)}</div>
+            ${p.context?`<div style="font-size:11px;color:#888;font-style:italic;margin-top:2px;">"${esc(p.context.slice(0,80))}"</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <a href="https://wa.me/${p.phone.replace(/[^0-9]/g,'').replace(/^0/,'62')}" target="_blank" style="padding:5px 10px;border:1px solid #25d366;border-radius:5px;background:#f0fdf4;font-size:12px;color:#16a34a;text-decoration:none;">💬 WA</a>
+            <button onclick="navigator.clipboard.writeText('${p.phone}').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})" style="padding:5px 10px;border:1px solid var(--border-dark);border-radius:5px;background:var(--bg);font-size:12px;cursor:pointer;">📋</button>
+          </div>
+        </div>`).join('');
+    }
+    if (type === 'social') {
+      if (!uniqueSocials.length) return `<div style="text-align:center;padding:24px;color:var(--muted);">👤 Tidak ada akun sosial media ditemukan di deskripsi.</div>`;
+      const icons = {instagram:'📸',tiktok:'🎵',whatsapp:'💬'};
+      const colors = {instagram:'#e1306c',tiktok:'#010101',whatsapp:'#25d366'};
+      return uniqueSocials.map(s=>`
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface);margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:16px;">${icons[s.type]||'🔗'}</span>
+              <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${colors[s.type]||'var(--blue)'};">${esc(s.handle)}</span>
+              <span style="font-size:11px;background:var(--bg);border:1px solid var(--border);padding:1px 7px;border-radius:4px;text-transform:capitalize;">${s.type}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);">📍 ${esc(s.source)}</div>
+          </div>
+          <button onclick="navigator.clipboard.writeText('${s.handle}').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})" style="padding:5px 10px;border:1px solid var(--border-dark);border-radius:5px;background:var(--bg);font-size:12px;cursor:pointer;flex-shrink:0;">📋</button>
+        </div>`).join('');
+    }
+    return '';
+  };
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Email</div><div class="stat-value">${uniqueEmails.length}</div><div class="stat-sub">unik</div></div>
+      <div class="stat-card"><div class="stat-label">Telepon/WA</div><div class="stat-value">${uniquePhones.length}</div><div class="stat-sub">nomor</div></div>
+      <div class="stat-card"><div class="stat-label">Sosmed</div><div class="stat-value">${uniqueSocials.length}</div><div class="stat-sub">akun</div></div>
+      <div class="stat-card"><div class="stat-label">Total Kontak</div><div class="stat-value">${uniqueEmails.length+uniquePhones.length+uniqueSocials.length}</div><div class="stat-sub">ditemukan</div></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <button class="filter-btn f-all" onclick="switchContactTab('email',this)" id="ctab-email">📧 Email (${uniqueEmails.length})</button>
+      <button class="filter-btn" onclick="switchContactTab('phone',this)" id="ctab-phone">📞 Telepon/WA (${uniquePhones.length})</button>
+      <button class="filter-btn" onclick="switchContactTab('social',this)" id="ctab-social">📱 Sosmed (${uniqueSocials.length})</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-outline" onclick="copyAllContacts()" style="font-size:12px;padding:5px 10px;">📋 Copy Email</button>
+      <button class="btn btn-green" onclick="exportEmails()" style="font-size:12px;padding:5px 10px;">⬇ Export CSV</button>
+    </div>
+    <div id="contactTabContent">${tabContent('email')}</div>
+    <script>
+      window._contactTabContent = ${JSON.stringify({email: tabContent('email'), phone: tabContent('phone'), social: tabContent('social')})};
+    <\/script>
+  `;
+
+  // Store for tab switching
+  window._contactTabData = {email: tabContent('email'), phone: tabContent('phone'), social: tabContent('social')};
+}
+
+function switchContactTab(type, btn) {
+  document.querySelectorAll('#emailContent .filter-btn').forEach(b => {
+    b.className = 'filter-btn';
+  });
+  btn.className = 'filter-btn f-all';
+  if (window._contactTabData) {
+    document.getElementById('contactTabContent').innerHTML = window._contactTabData[type] || '';
+  }
+}
+
+function copyAllContacts() {
+  const {emails} = scrapeAllContacts();
+  const unique = [...new Set(emails.map(e=>e.email))];
+  if (!unique.length) return;
+  navigator.clipboard.writeText(unique.join('\n')).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Tersalin!';
+    setTimeout(() => btn.textContent = '📋 Copy Email', 2000);
+  });
+}
+
+function exportEmails() {
+  const {emails, phones, socials} = scrapeAllContacts();
+  const seenE = new Set();
+  const uniqueE = emails.filter(e => { if(seenE.has(e.email)) return false; seenE.add(e.email); return true; });
+  const headers = ['Tipe','Nilai','Sumber','Konteks','Video ID'];
+  const rows = [
+    ...uniqueE.map(e => ['Email', e.email, `"${(e.source||'').replace(/"/g,'""')}"`, `"${(e.context||'').replace(/"/g,'""').replace(/\n/g,' ').slice(0,100)}"`, e.videoId||'']),
+    ...phones.map(p => ['Telepon', p.phone, `"${(p.source||'').replace(/"/g,'""')}"`, `"${(p.context||'').replace(/"/g,'""').slice(0,100)}"`, p.videoId||'']),
+    ...socials.map(s => [s.type, s.handle, `"${(s.source||'').replace(/"/g,'""')}"`, '', ''])
+  ];
+  dl([headers,...rows].map(r=>r.join(',')).join('\n'), `${channelData.snippet?.title||'channel'}_contacts.csv`, 'text/csv');
+}
+
+async function startCommentAnalysis() {
+  const ytKey = document.getElementById('apiKey').value.trim();
+  const claudeKey = document.getElementById('claudeKey').value.trim();
+  const videoCountSel = parseInt(document.getElementById('commentVideoCount').value);
+  const commentsPerVid = parseInt(document.getElementById('commentsPerVideo').value) || 50;
+
+  if (!ytKey) { showCommentAlert('Masukkan YouTube API Key di form Konfigurasi terlebih dahulu.','error'); return; }
+  if (!allVideos.length) { showCommentAlert('Scrape channel terlebih dahulu.','error'); return; }
+
+  clearCommentAlert();
+  document.getElementById('commentResults').classList.add('hidden');
+  document.getElementById('commentLoadingEl').classList.remove('hidden');
+  allComments = [];
+
+  // If 9999 = semua video dari hasil scrape
+  const topVideos = videoCountSel >= 9999
+    ? [...allVideos]
+    : [...allVideos].sort((a,b)=>parseInt(b.views)-parseInt(a.views)).slice(0,videoCountSel);
+
+  const total = topVideos.length;
+  let sentimentDone = 0;
+
+  // Check Claude API validity ONCE before the loop
+  if (claudeKey) {
+    document.getElementById('commentLoadingText').textContent = '🔑 Memeriksa Claude API Key...';
+    _claudeApiOk = null; // reset
+    const apiOk = await checkClaudeKey(claudeKey);
+    if (!apiOk) {
+      showCommentAlert('⚠️ Claude API tidak tersedia (credit habis atau key salah). Melanjutkan dengan mode <strong>keyword fallback</strong>.', 'info');
+    }
+  }
+
+  function updateProgress(i, phase) {
+    const pct = Math.round((i / total) * 100);
+    document.getElementById('commentProgressBar').style.width = pct + '%';
+    document.getElementById('commentProgressPct').textContent = pct + '%';
+    document.getElementById('commentProgressLabel').textContent = `${i} / ${total} video`;
+    document.getElementById('commentLoadingText').textContent =
+      phase === 'fetch'
+        ? `📥 Mengambil komentar video ${i+1}/${total}: ${topVideos[i]?.title?.slice(0,35)||''}...`
+        : `🧠 Menganalisis sentimen video ${i+1}/${total}...`;
+    document.getElementById('commentCount').textContent = allComments.length;
+    document.getElementById('sentimentDone').textContent = sentimentDone;
+  }
+
+  for (let i=0; i<topVideos.length; i++) {
+    const v = topVideos[i];
+    updateProgress(i, 'fetch');
+
+    const comments = await getComments(ytKey, v.id, commentsPerVid);
+    comments.forEach(c => { c.videoTitle = v.title; c.videoId = v.id; });
+
+    if (comments.length > 0) {
+      updateProgress(i, 'analyze');
+
+      // If Claude key provided → use AI; else keyword fallback
+      let sentiments;
+      if (claudeKey) {
+        sentiments = await analyzeSentiment(claudeKey, comments);
+      } else {
+        sentiments = comments.map((c, idx) => ({ index: idx+1, sentiment: keywordSentiment(c.text) }));
+      }
+      sentiments.forEach(s => {
+        const idx = s.index - 1;
+        if (comments[idx]) comments[idx].sentiment = s.sentiment;
+      });
+      allComments.push(...comments.map(c => ({...c, sentiment: c.sentiment||keywordSentiment(c.text)})));
+      sentimentDone += comments.length;
+    }
+
+    // Update progress after done
+    document.getElementById('commentCount').textContent = allComments.length;
+    document.getElementById('sentimentDone').textContent = sentimentDone;
+  }
+
+  // Final progress = 100%
+  document.getElementById('commentProgressBar').style.width = '100%';
+  document.getElementById('commentProgressPct').textContent = '100%';
+  document.getElementById('commentProgressLabel').textContent = `${total} / ${total} video`;
+
+  document.getElementById('commentLoadingEl').classList.add('hidden');
+  if (!allComments.length) {
+    showCommentAlert('Tidak ada komentar yang ditemukan (komentar mungkin dinonaktifkan).','error');
+    return;
+  }
+
+  commentFilter = 'all';
+  renderComments();
+  document.getElementById('commentResults').classList.remove('hidden');
+  // Also update geo tab
+  if (!document.getElementById('tab-geo').classList.contains('hidden')) renderGeo();
+  showCommentAlert(`✅ Selesai! <strong>${allComments.length} komentar</strong> dari <strong>${total} video</strong> dianalisis.${!claudeKey?' (mode keyword — tanpa Claude API)':''}`, 'success');
+}
+
+function renderComments() {
+  const pos = allComments.filter(c=>c.sentiment==='pos').length;
+  const neg = allComments.filter(c=>c.sentiment==='neg').length;
+  const neu = allComments.filter(c=>c.sentiment==='neu').length;
+  const total = allComments.length;
+
+  // Summary cards
+  document.getElementById('sentimentSummary').innerHTML = `
+    <div class="sent-card pos"><div class="sent-card-num pos">${pos}</div><div class="sent-card-label">😊 Positif</div><div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px;">${total?Math.round(pos/total*100):0}%</div></div>
+    <div class="sent-card neg"><div class="sent-card-num neg">${neg}</div><div class="sent-card-label">😠 Negatif</div><div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px;">${total?Math.round(neg/total*100):0}%</div></div>
+    <div class="sent-card neu"><div class="sent-card-num neu">${neu}</div><div class="sent-card-label">😐 Netral</div><div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px;">${total?Math.round(neu/total*100):0}%</div></div>
+  `;
+
+  // Sentiment bar
+  const pp = total?pos/total*100:33, np = total?neg/total*100:33, nup = total?neu/total*100:34;
+  document.getElementById('sentimentBar').innerHTML = `
+    <div class="sent-bar-pos" style="width:${pp}%"></div>
+    <div class="sent-bar-neg" style="width:${np}%"></div>
+    <div class="sent-bar-neu" style="flex:1"></div>
+  `;
+
+  // Filter & render list
+  const filtered = commentFilter==='all' ? allComments : allComments.filter(c=>c.sentiment===commentFilter);
+
+  // Group by video
+  const byVideo = {};
+  filtered.forEach(c => {
+    if (!byVideo[c.videoId]) byVideo[c.videoId] = {title: c.videoTitle, comments: []};
+    byVideo[c.videoId].comments.push(c);
+  });
+
+  const sentLabel = {pos:'😊 Positif', neg:'😠 Negatif', neu:'😐 Netral'};
+
+  document.getElementById('commentList').innerHTML = Object.entries(byVideo).map(([vid, data]) => `
+    <div class="video-comment-section">
+      <div class="video-section-title">
+        <span style="background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;">▶</span>
+        <a href="https://youtube.com/watch?v=${vid}" target="_blank">${esc(data.title)}</a>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">${data.comments.length} komentar</span>
+      </div>
+      <div class="comment-list">
+        ${data.comments.map(c => `
+          <div class="comment-item ${c.sentiment}">
+            <div class="comment-meta">
+              <span class="comment-author">👤 ${esc(c.author)}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="sent-badge ${c.sentiment}">${sentLabel[c.sentiment]}</span>
+                <span class="comment-date">${fmtDate(c.date)}</span>
+              </div>
+            </div>
+            <div class="comment-text">${esc(c.text.slice(0,300))}${c.text.length>300?'…':''}</div>
+            ${c.likes>0?`<div class="comment-likes">👍 ${fmt(c.likes)} likes</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>
+  `).join('') || `<div style="text-align:center;padding:30px;color:var(--muted);font-size:14px;">Tidak ada komentar untuk filter ini.</div>`;
+}
+
+function filterComments(type, btn) {
+  commentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.className = 'filter-btn');
+  const cls = {all:'filter-btn f-all', pos:'filter-btn f-pos', neg:'filter-btn f-neg', neu:'filter-btn f-neu'};
+  btn.className = cls[type];
+  renderComments();
+}
+
+function showCommentAlert(msg, type='info') {
+  const ic = {info:'ℹ️',error:'❌',success:'✅'};
+  document.getElementById('commentAlertArea').innerHTML = `<div class="alert alert-${type}"><span>${ic[type]}</span><span>${msg}</span></div>`;
+}
+function clearCommentAlert() { document.getElementById('commentAlertArea').innerHTML=''; }
+
+
+
+// ── GROWTH TAB ──
+function renderGrowth() {
+  if (!allVideos.length) return;
+  const el = document.getElementById('growthContent');
+  const stats = channelData.statistics||{};
+  const snippet = channelData.snippet||{};
+  const subs = parseInt(stats.subscriberCount||0);
+  const totalViews = parseInt(stats.viewCount||0);
+  const totalVids = parseInt(stats.videoCount||0);
+  const createdAt = snippet.publishedAt ? new Date(snippet.publishedAt) : null;
+  const now = new Date();
+  const ageMonths = createdAt ? Math.max(1, Math.round((now-createdAt)/(1000*60*60*24*30))) : 1;
+  const ageYears = (ageMonths/12).toFixed(1);
+  const ageDays = createdAt ? Math.round((now-createdAt)/(1000*60*60*24)) : 1;
+
+  // Estimated averages
+  const subsPerMonth = Math.round(subs/ageMonths);
+  const subsPerDay = Math.round(subs/ageDays);
+  const viewsPerMonth = Math.round(totalViews/ageMonths);
+  const viewsPerDay = Math.round(totalViews/ageDays);
+  const vidsPerMonth = (totalVids/ageMonths).toFixed(1);
+  const vidsPerWeek = (totalVids/(ageMonths*4.3)).toFixed(1);
+
+  // Video upload frequency from actual data
+  const sorted = [...allVideos].sort((a,b)=>new Date(a.publishedAt)-new Date(b.publishedAt));
+  let avgGapDays = null;
+  if (sorted.length >= 2) {
+    const gaps = [];
+    for (let i=1;i<sorted.length;i++) {
+      const d = (new Date(sorted[i].publishedAt)-new Date(sorted[i-1].publishedAt))/(1000*60*60*24);
+      if (d>=0) gaps.push(d);
+    }
+    if (gaps.length) avgGapDays = (gaps.reduce((a,b)=>a+b,0)/gaps.length).toFixed(1);
+  }
+
+  // Monthly upload count from actual data
+  const monthMap = {};
+  allVideos.forEach(v=>{
+    if (!v.publishedAt) return;
+    const key = v.publishedAt.slice(0,7); // YYYY-MM
+    monthMap[key] = (monthMap[key]||0)+1;
+  });
+  const monthEntries = Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);
+  const maxMonthCount = Math.max(...monthEntries.map(e=>e[1]),1);
+
+  // Views trend per month from video data
+  const viewsByMonth = {};
+  allVideos.forEach(v=>{
+    if (!v.publishedAt) return;
+    const key = v.publishedAt.slice(0,7);
+    viewsByMonth[key] = (viewsByMonth[key]||0) + parseInt(v.views||0);
+  });
+  const viewMonthEntries = Object.entries(viewsByMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);
+  const maxMonthViews = Math.max(...viewMonthEntries.map(e=>e[1]),1);
+
+  // Likes trend per month
+  const likesByMonth = {};
+  allVideos.forEach(v=>{
+    if (!v.publishedAt) return;
+    const key = v.publishedAt.slice(0,7);
+    likesByMonth[key] = (likesByMonth[key]||0) + parseInt(v.likes||0);
+  });
+  const likesMonthEntries = Object.entries(likesByMonth).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12);
+  const maxMonthLikes = Math.max(...likesMonthEntries.map(e=>e[1]),1);
+
+  const fmtMonth = key => {
+    const [y,m] = key.split('-');
+    const names = ['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    return `${names[parseInt(m)]} ${y.slice(2)}`;
+  };
+
+  el.innerHTML = `
+    <div class="info-note">ℹ️ <strong>Subscriber baru/unsubscribe harian</strong> hanya tersedia di YouTube Studio (dashboard kreator). Data berikut adalah <em>estimasi berdasarkan total subscriber & umur channel</em>.</div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Umur Channel</div><div class="stat-value">${ageYears}th</div><div class="stat-sub">${ageMonths} bulan</div></div>
+      <div class="stat-card"><div class="stat-label">Dibuat</div><div class="stat-value" style="font-size:14px;">${fmtDate(snippet.publishedAt)}</div><div class="stat-sub">tanggal berdiri</div></div>
+      <div class="stat-card"><div class="stat-label">Total Subscriber</div><div class="stat-value" style="color:var(--accent)">${fmt(subs)}</div><div class="stat-sub">${fmtFull(subs)}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div class="card" style="padding:14px;">
+        <div class="card-title">📊 Estimasi Pertumbuhan Subscriber</div>
+        <div class="info-note" style="font-size:11px;padding:6px 10px;">Estimasi berdasarkan total ${fmt(subs)} subscriber dibagi umur channel</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Per Hari (est.)</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--green);">+${fmt(subsPerDay)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Per Bulan (est.)</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--green);">+${fmt(subsPerMonth)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Per Tahun (est.)</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--green);">+${fmt(subsPerMonth*12)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+            <span style="font-size:13px;color:var(--muted);">Views per Hari (est.)</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--blue);">+${fmt(viewsPerDay)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <div class="card-title">🎬 Frekuensi Upload</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Total Video</span>
+            <span style="font-family:var(--mono);font-weight:600;">${fmt(totalVids)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Rata-rata/Bulan</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--blue);">${vidsPerMonth} video</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;color:var(--muted);">Rata-rata/Minggu</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--blue);">${vidsPerWeek} video</span>
+          </div>
+          ${avgGapDays!==null?`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+            <span style="font-size:13px;color:var(--muted);">Jarak antar upload</span>
+            <span style="font-family:var(--mono);font-weight:600;color:var(--yellow);">${avgGapDays} hari</span>
+          </div>`:''}
+        </div>
+      </div>
+    </div>
+
+    <div class="card-title">📅 Jumlah Upload per Bulan (${monthEntries.length} bulan terakhir)</div>
+    <div class="growth-timeline" style="margin-top:10px;margin-bottom:20px;">
+      ${monthEntries.map(([key,count])=>`
+        <div class="growth-item">
+          <span style="font-size:12px;font-family:var(--mono);color:var(--muted);">${fmtMonth(key)}</span>
+          <div class="growth-bar-outer"><div class="growth-bar-inner" style="width:${count/maxMonthCount*100}%;background:var(--accent);"></div></div>
+          <span style="font-size:12px;font-family:var(--mono);font-weight:600;min-width:50px;text-align:right;">${count} video</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="card-title">👁 Views per Bulan dari Video yang Diambil</div>
+    <div class="growth-timeline" style="margin-top:10px;margin-bottom:20px;">
+      ${viewMonthEntries.map(([key,views])=>`
+        <div class="growth-item">
+          <span style="font-size:12px;font-family:var(--mono);color:var(--muted);">${fmtMonth(key)}</span>
+          <div class="growth-bar-outer"><div class="growth-bar-inner" style="width:${views/maxMonthViews*100}%;background:var(--blue);"></div></div>
+          <span style="font-size:12px;font-family:var(--mono);font-weight:600;min-width:60px;text-align:right;">${fmt(views)}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="card-title">👍 Likes per Bulan dari Video yang Diambil</div>
+    <div class="growth-timeline" style="margin-top:10px;">
+      ${likesMonthEntries.map(([key,likes])=>`
+        <div class="growth-item">
+          <span style="font-size:12px;font-family:var(--mono);color:var(--muted);">${fmtMonth(key)}</span>
+          <div class="growth-bar-outer"><div class="growth-bar-inner" style="width:${likes/maxMonthLikes*100}%;background:var(--green);"></div></div>
+          <span style="font-size:12px;font-family:var(--mono);font-weight:600;min-width:60px;text-align:right;">${fmt(likes)}</span>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+
+// ── GEO / NEGARA TAB ──
+// Detect language/country from comment text patterns
+function detectLang(text) {
+  if (!text) return null;
+  const t = text.toLowerCase();
+
+  // Indonesian/Malay markers
+  const idWords = ['yang','dan','ini','itu','dengan','untuk','tidak','ada','dari','ke','di','aku','saya','kamu','kalian','mereka','kami','kita','juga','bisa','mau','sudah','belum','lagi','banget','dong','sih','nih','tuh','yuk','ayo','wkwk','hehe','haha','mantap','keren','bagus','oke','gak','ga','nggak','nya','lah','deh','kan','yah','udah','gimana','kenapa','karena','kalau','tapi','terus','sekali','sangat','sangat','punya'];
+  const idScore = idWords.filter(w => t.includes(w)).length;
+
+  // English markers
+  const enWords = ['the','and','is','are','was','were','this','that','with','have','has','for','not','you','your','they','their','we','our','it','its','be','been','do','does','did','will','would','can','could','should','may','might','must','shall'];
+  const enScore = enWords.filter(w => new RegExp('\\b'+w+'\\b').test(t)).length;
+
+  // Arabic markers
+  if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+  // Chinese markers
+  if (/[\u4E00-\u9FFF]/.test(text)) return 'zh';
+  // Japanese markers
+  if (/[\u3040-\u30FF]/.test(text)) return 'ja';
+  // Korean markers
+  if (/[\uAC00-\uD7AF]/.test(text)) return 'ko';
+  // Thai markers
+  if (/[\u0E00-\u0E7F]/.test(text)) return 'th';
+  // Russian/Cyrillic markers
+  if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+  // Spanish markers
+  const esWords = ['hola','gracias','muy','que','con','los','las','una','como','para','pero','más','todo','bien','hacer','hay','por','sin','sobre','también','cuando','tiene','este','esta'];
+  const esScore = esWords.filter(w => t.includes(w)).length;
+  // Portuguese markers
+  const ptWords = ['que','não','com','uma','para','mais','como','por','mas','dos','das','esse','essa','isso','muito','bem','obrigado','também','quando','tem'];
+  const ptScore = ptWords.filter(w => t.includes(w)).length;
+  // French markers
+  const frWords = ['le','la','les','un','une','des','que','qui','est','pas','pour','dans','avec','sur','je','tu','il','nous','vous','ils'];
+  const frScore = frWords.filter(w => t.includes(w)).length;
+  // German markers
+  const deWords = ['der','die','das','ist','ein','eine','nicht','und','oder','aber','auch','mit','von','für','auf','bei','nach','über','unter','wir','sie','ich','du','er'];
+  const deScore = deWords.filter(w => t.includes(w)).length;
+  // Hindi markers
+  if (/[\u0900-\u097F]/.test(text)) return 'hi';
+  // Turkish markers
+  const trWords = ['bir','bu','de','da','ve','ile','için','ama','çok','var','yok','ne','nasıl','neden','çünkü','evet','hayır','iyi','güzel','teşekkür'];
+  const trScore = trWords.filter(w => t.includes(w)).length;
+  // Vietnamese markers
+  const viWords = ['và','của','là','có','không','với','được','cho','những','này','đó','như','cũng','đã','để','hay','rất','một','từ','bạn','thì'];
+  const viScore = viWords.filter(w => t.includes(w)).length;
+
+  const scores = {id: idScore, en: enScore, es: esScore, pt: ptScore, fr: frScore, de: deScore, tr: trScore, vi: viScore};
+  const best = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+  if (best[1] >= 2) return best[0];
+  // Default Latin script with low confidence → English
+  if (/[a-zA-Z]/.test(text) && enScore > 0) return 'en';
+  return 'other';
+}
+
+const LANG_INFO = {
+  id: { name:'Indonesia', flag:'🇮🇩', region:'Asia Tenggara', color:'#dc2626' },
+  en: { name:'English (Int\'l)', flag:'🌐', region:'Global', color:'#2563eb' },
+  zh: { name:'China/Taiwan', flag:'🇨🇳', region:'Asia Timur', color:'#dc2626' },
+  ar: { name:'Arab/Timur Tengah', flag:'🇸🇦', region:'Timur Tengah', color:'#16a34a' },
+  ja: { name:'Jepang', flag:'🇯🇵', region:'Asia Timur', color:'#dc2626' },
+  ko: { name:'Korea', flag:'🇰🇷', region:'Asia Timur', color:'#1d4ed8' },
+  th: { name:'Thailand', flag:'🇹🇭', region:'Asia Tenggara', color:'#dc2626' },
+  ru: { name:'Rusia', flag:'🇷🇺', region:'Eropa Timur', color:'#dc2626' },
+  es: { name:'Spanyol/Latin Am.', flag:'🇪🇸', region:'Eropa/Amerika', color:'#d97706' },
+  pt: { name:'Portugis/Brasil', flag:'🇧🇷', region:'Amerika Selatan', color:'#16a34a' },
+  fr: { name:'Prancis', flag:'🇫🇷', region:'Eropa Barat', color:'#2563eb' },
+  de: { name:'Jerman', flag:'🇩🇪', region:'Eropa Barat', color:'#1a1a18' },
+  hi: { name:'India (Hindi)', flag:'🇮🇳', region:'Asia Selatan', color:'#d97706' },
+  tr: { name:'Turki', flag:'🇹🇷', region:'Asia Barat', color:'#dc2626' },
+  vi: { name:'Vietnam', flag:'🇻🇳', region:'Asia Tenggara', color:'#dc2626' },
+  other: { name:'Lainnya', flag:'🌏', region:'Tidak diketahui', color:'#888880' },
+};
+
+function renderGeo() {
+  const el = document.getElementById('geoContent');
+
+  // Use comments if available, else use video titles/descriptions as proxy
+  const hasComments = allComments.length > 0;
+  const texts = hasComments
+    ? allComments.map(c => ({ text: c.text, sentiment: c.sentiment }))
+    : allVideos.map(v => ({ text: v.description || v.title || '', sentiment: null }));
+
+  if (!texts.length) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);">Scrape channel terlebih dahulu.</div>`;
+    return;
+  }
+
+  // Count languages
+  const langCount = {};
+  const langSentiment = {}; // track sentiment per lang
+  texts.forEach(item => {
+    const lang = detectLang(item.text) || 'other';
+    langCount[lang] = (langCount[lang]||0) + 1;
+    if (item.sentiment) {
+      if (!langSentiment[lang]) langSentiment[lang] = {pos:0,neg:0,neu:0};
+      langSentiment[lang][item.sentiment] = (langSentiment[lang][item.sentiment]||0)+1;
+    }
+  });
+
+  const sorted = Object.entries(langCount).sort((a,b)=>b[1]-a[1]);
+  const totalTexts = texts.length;
+  const maxCount = sorted[0]?.[1] || 1;
+  const topLang = sorted[0]?.[0] || 'id';
+  const uniqueLangs = sorted.length;
+
+  // Region grouping
+  const regionCount = {};
+  sorted.forEach(([lang, cnt]) => {
+    const region = LANG_INFO[lang]?.region || 'Lainnya';
+    regionCount[region] = (regionCount[region]||0) + cnt;
+  });
+  const regionSorted = Object.entries(regionCount).sort((a,b)=>b[1]-a[1]);
+
+  // Channel metadata hints
+  const chCountry = channelData?.snippet?.country || null;
+  const chLang = channelData?.snippet?.defaultLanguage || channelData?.brandingSettings?.channel?.defaultLanguage || null;
+
+  el.innerHTML = `
+    <div class="info-note">
+      ℹ️ Data negara penonton <strong>tidak tersedia</strong> via YouTube Data API publik (butuh OAuth kreator). 
+      Berikut adalah <strong>estimasi berdasarkan bahasa komentar</strong>${!hasComments?' dan deskripsi video':''}.
+      ${hasComments?`Dianalisis dari <strong>${totalTexts.toLocaleString('id')} komentar</strong>.`:'Analisis komentar terlebih dahulu untuk hasil lebih akurat.'}
+    </div>
+
+    <div class="geo-grid">
+      <div class="stat-card"><div class="stat-label">Bahasa Terdeteksi</div><div class="stat-value">${uniqueLangs}</div><div class="stat-sub">bahasa unik</div></div>
+      <div class="stat-card"><div class="stat-label">Bahasa Dominan</div><div class="stat-value" style="font-size:20px;">${LANG_INFO[topLang]?.flag||'🌐'} ${LANG_INFO[topLang]?.name||topLang}</div><div class="stat-sub">${Math.round(langCount[topLang]/totalTexts*100)}% dari komentar</div></div>
+      <div class="stat-card"><div class="stat-label">Negara Channel</div><div class="stat-value" style="font-size:16px;">${chCountry ? '🌏 '+chCountry : '—'}</div><div class="stat-sub">${chLang?'Bahasa: '+chLang:'dari metadata'}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div class="card" style="padding:14px;">
+        <div class="card-title">🗺 Distribusi per Wilayah</div>
+        <div style="margin-top:8px;">
+          ${regionSorted.map(([region,cnt])=>{
+            const pct=Math.round(cnt/totalTexts*100);
+            return `<div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+                <span style="font-weight:500;">${region}</span>
+                <span style="font-family:var(--mono);color:var(--muted);">${pct}%</span>
+              </div>
+              <div class="geo-bar-outer"><div class="geo-bar-inner" style="width:${pct}%;background:var(--blue);"></div></div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="card" style="padding:14px;">
+        <div class="card-title">😊 Sentimen per Bahasa</div>
+        ${Object.keys(langSentiment).length === 0
+          ? `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">Jalankan Analisis Komentar dulu untuk data sentimen.</div>`
+          : `<div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;">
+            ${sorted.slice(0,8).filter(([l])=>langSentiment[l]).map(([lang,cnt])=>{
+              const s = langSentiment[lang]||{pos:0,neg:0,neu:0};
+              const tot = s.pos+s.neg+s.neu||1;
+              const pp=Math.round(s.pos/tot*100), np=Math.round(s.neg/tot*100), nup=100-pp-np;
+              return `<div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                  <span style="font-size:14px;">${LANG_INFO[lang]?.flag||'🌐'}</span>
+                  <span style="font-size:12px;font-weight:500;">${LANG_INFO[lang]?.name||lang}</span>
+                  <span style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:auto;">${cnt}</span>
+                </div>
+                <div style="display:flex;height:6px;border-radius:99px;overflow:hidden;gap:1px;">
+                  <div style="width:${pp}%;background:var(--green);"></div>
+                  <div style="width:${np}%;background:#dc2626;"></div>
+                  <div style="flex:1;background:var(--yellow);"></div>
+                </div>
+                <div style="display:flex;gap:8px;font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono);">
+                  <span>😊${pp}%</span><span>😠${np}%</span><span>😐${nup}%</span>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>`
+        }
+      </div>
+    </div>
+
+    <div class="card-title">🌍 Estimasi Bahasa Penonton (${totalTexts.toLocaleString('id')} ${hasComments?'komentar':'teks'})</div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+      ${sorted.map(([lang, cnt]) => {
+        const info = LANG_INFO[lang] || {name:lang, flag:'🌐', color:'#888'};
+        const pct = Math.round(cnt/totalTexts*100);
+        const s = langSentiment[lang];
+        return `<div class="geo-bar-row">
+          <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
+            <span style="font-size:16px;flex-shrink:0;">${info.flag}</span>
+            <span style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${info.name}</span>
+          </div>
+          <div class="geo-bar-outer">
+            <div class="geo-bar-inner" style="width:${pct}%;background:${info.color};"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:12px;font-weight:600;text-align:right;">${pct}%</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;">${cnt.toLocaleString('id')}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="card-title">🏷 Semua Bahasa Terdeteksi</div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:0;">
+        ${sorted.map(([lang,cnt])=>{
+          const info = LANG_INFO[lang]||{name:lang,flag:'🌐'};
+          const pct=Math.round(cnt/totalTexts*100);
+          return `<span class="lang-badge">${info.flag} ${info.name} <strong style="font-family:var(--mono);margin-left:4px;">${pct}%</strong></span>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+
+// ── SEARCH & FILTER VIDEOS ──
+let videoSearchQuery = '', videoFilterYear = '', videoFilterMinViews = 0;
+
+function filterVideos() {
+  videoSearchQuery = (document.getElementById('videoSearch')?.value||'').toLowerCase();
+  videoFilterYear = document.getElementById('filterYear')?.value||'';
+  videoFilterMinViews = parseInt(document.getElementById('filterMinViews')?.value||0);
+
+  allVideosFiltered = allVideos.filter(v => {
+    const matchTitle = !videoSearchQuery || v.title.toLowerCase().includes(videoSearchQuery);
+    const matchYear = !videoFilterYear || (v.publishedAt||'').startsWith(videoFilterYear);
+    const matchViews = parseInt(v.views||0) >= videoFilterMinViews;
+    return matchTitle && matchYear && matchViews;
+  });
+  currentPage = 1;
+  renderVideos();
+}
+
+function clearVideoFilter() {
+  document.getElementById('videoSearch').value = '';
+  document.getElementById('filterYear').value = '';
+  document.getElementById('filterMinViews').value = '0';
+  videoSearchQuery = ''; videoFilterYear = ''; videoFilterMinViews = 0;
+  allVideosFiltered = [];
+  currentPage = 1;
+  renderVideos();
+}
+
+function populateYearFilter() {
+  const years = [...new Set(allVideos.map(v=>(v.publishedAt||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('filterYear');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Semua Tahun</option>' + years.map(y=>`<option value="${y}">${y}</option>`).join('');
+}
+
+// ── SCHEDULE TAB ──
+function renderSchedule() {
+  const el = document.getElementById('scheduleContent');
+  if (!allVideos.length) { el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">Scrape channel dulu.</div>'; return; }
+
+  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const dayShort = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+  // Count by day and hour, also sum views/likes
+  const dayStats = Array(7).fill(null).map(()=>({count:0,views:0,likes:0,eng:0}));
+  const hourStats = Array(24).fill(null).map(()=>({count:0,views:0}));
+  const dayHourMatrix = Array(7).fill(null).map(()=>Array(24).fill(0));
+
+  allVideos.forEach(v => {
+    if (!v.publishedAt) return;
+    const d = new Date(v.publishedAt);
+    const day = d.getDay(), hour = d.getHours();
+    const views = parseInt(v.views||0), likes = parseInt(v.likes||0);
+    dayStats[day].count++;
+    dayStats[day].views += views;
+    dayStats[day].likes += likes;
+    dayStats[day].eng += eng(v);
+    hourStats[hour].count++;
+    hourStats[hour].views += views;
+    dayHourMatrix[day][hour]++;
+  });
+
+  const maxDayCount = Math.max(...dayStats.map(d=>d.count),1);
+  const maxHourViews = Math.max(...hourStats.map(h=>h.views),1);
+  const maxCell = Math.max(...dayHourMatrix.flat(),1);
+
+  // Best day
+  const bestDayIdx = dayStats.indexOf([...dayStats].sort((a,b)=>b.views/Math.max(b.count,1)-a.views/Math.max(a.count,1))[0]);
+  const bestHourIdx = hourStats.indexOf([...hourStats].sort((a,b)=>b.views/Math.max(b.count,1)-a.views/Math.max(a.count,1))[0]);
+
+  const heatColors = (val, max) => {
+    const p = val/max;
+    if (p===0) return '#f5f5f0';
+    if (p<0.25) return '#fee2e2';
+    if (p<0.5) return '#fca5a5';
+    if (p<0.75) return '#f87171';
+    return '#dc2626';
+  };
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Hari Terbaik</div><div class="stat-value" style="font-size:16px;">${days[bestDayIdx]}</div><div class="stat-sub">avg views tertinggi</div></div>
+      <div class="stat-card"><div class="stat-label">Jam Terbaik</div><div class="stat-value">${String(bestHourIdx).padStart(2,'0')}:00</div><div class="stat-sub">avg views tertinggi</div></div>
+      <div class="stat-card"><div class="stat-label">Rekomendasi</div><div class="stat-value" style="font-size:13px;">${days[bestDayIdx]}, ${String(bestHourIdx).padStart(2,'0')}:00</div><div class="stat-sub">waktu upload ideal</div></div>
+    </div>
+
+    <div class="card-title">📅 Upload per Hari (${allVideos.length} video)</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:10px 0 20px;">
+      ${dayStats.map((d,i)=>{
+        const avgViews = d.count ? Math.round(d.views/d.count) : 0;
+        const pct = d.count/maxDayCount*100;
+        const isBest = i===bestDayIdx;
+        return `<div style="text-align:center;">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;">${dayShort[i]}</div>
+          <div style="height:60px;display:flex;align-items:flex-end;justify-content:center;">
+            <div style="width:28px;background:${isBest?'var(--accent)':'#e2e2da'};border-radius:4px 4px 0 0;height:${Math.max(pct,4)}%;transition:height .3s;"></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:11px;margin-top:3px;">${d.count}</div>
+          <div style="font-size:10px;color:var(--muted);">${fmt(avgViews)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card-title">🕐 Upload per Jam</div>
+    <div style="margin:10px 0 20px;display:flex;flex-direction:column;gap:3px;">
+      ${[6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,0,1,2,3,4,5].map(h=>{
+        const s = hourStats[h];
+        const avgV = s.count ? Math.round(s.views/s.count) : 0;
+        const pct = s.views/maxHourViews*100;
+        const isBest = h===bestHourIdx;
+        return `<div class="hour-row">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;">${String(h).padStart(2,'0')}:00</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="flex:1;height:14px;background:var(--border);border-radius:3px;overflow:hidden;max-width:300px;">
+              <div style="height:14px;width:${pct}%;background:${isBest?'var(--accent)':'var(--blue)'};border-radius:3px;"></div>
+            </div>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:50px;">${s.count} video</span>
+            <span style="font-family:var(--mono);font-size:11px;min-width:55px;">${fmt(avgV)} avg</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card-title">🔥 Heatmap Hari × Jam (jumlah upload)</div>
+    <div style="overflow-x:auto;margin-top:10px;">
+      <table style="border-collapse:collapse;font-size:10px;font-family:var(--mono);">
+        <thead><tr>
+          <th style="padding:4px 6px;color:var(--muted);font-weight:600;">JAM</th>
+          ${dayShort.map(d=>`<th style="padding:4px 8px;color:var(--muted);font-weight:600;">${d}</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${Array.from({length:24},(_,h)=>`
+            <tr>
+              <td style="padding:3px 6px;color:var(--muted);">${String(h).padStart(2,'0')}:00</td>
+              ${dayHourMatrix.map(dayArr=>{
+                const val=dayArr[h];
+                const bg=heatColors(val,maxCell);
+                return `<td style="padding:3px 8px;background:${bg};border-radius:3px;text-align:center;color:${val>0?'#fff':'var(--muted)'};">${val||''}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── TAGS SEO TAB ──
+function renderTags() {
+  const el = document.getElementById('tagsContent');
+  if (!allVideos.length) { el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">Scrape channel dulu.</div>'; return; }
+
+  // Count tags across all videos + correlate with views
+  const tagData = {};
+  allVideos.forEach(v => {
+    const views = parseInt(v.views||0);
+    const likes = parseInt(v.likes||0);
+    (v.tags||[]).forEach(tag => {
+      const t = tag.toLowerCase().trim();
+      if (!t || t.length < 2) return;
+      if (!tagData[t]) tagData[t] = {tag:t, count:0, totalViews:0, totalLikes:0, videos:[]};
+      tagData[t].count++;
+      tagData[t].totalViews += views;
+      tagData[t].totalLikes += likes;
+      tagData[t].videos.push(v.id);
+    });
+  });
+
+  if (!Object.keys(tagData).length) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">Tidak ada tag ditemukan di video ini.<br><span style="font-size:12px;">Creator mungkin tidak menggunakan tags.</span></div>';
+    return;
+  }
+
+  const tags = Object.values(tagData);
+  const byCount = [...tags].sort((a,b)=>b.count-a.count).slice(0,50);
+  const byViews = [...tags].sort((a,b)=>(b.totalViews/b.count)-(a.totalViews/a.count)).slice(0,20);
+  const maxCount = byCount[0]?.count||1;
+  const maxViews = Math.max(...byViews.map(t=>t.totalViews/t.count),1);
+
+  const sizeClass = (count) => {
+    const p = count/maxCount;
+    if (p>0.8) return 'font-size:18px;font-weight:700;';
+    if (p>0.5) return 'font-size:15px;font-weight:600;';
+    if (p>0.25) return 'font-size:13px;font-weight:500;';
+    return 'font-size:11px;';
+  };
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-label">Total Tag Unik</div><div class="stat-value">${tags.length}</div><div class="stat-sub">tag berbeda</div></div>
+      <div class="stat-card"><div class="stat-label">Tag Paling Sering</div><div class="stat-value" style="font-size:13px;">${byCount[0]?.tag||'—'}</div><div class="stat-sub">${byCount[0]?.count||0}x dipakai</div></div>
+      <div class="stat-card"><div class="stat-label">Tag Terbaik (views)</div><div class="stat-value" style="font-size:13px;">${byViews[0]?.tag||'—'}</div><div class="stat-sub">${fmt(Math.round(byViews[0]?.totalViews/byViews[0]?.count||0))} avg views</div></div>
+    </div>
+
+    <div class="card-title">☁️ Tag Cloud (Top 50 paling sering dipakai)</div>
+    <div class="tag-cloud" style="margin:10px 0 20px;">
+      ${byCount.map(t=>{
+        const p = t.count/maxCount;
+        const hue = Math.round(p*220);
+        return `<span class="tag-chip" style="${sizeClass(t.count)}background:hsl(${hue},60%,95%);border-color:hsl(${hue},50%,75%);color:hsl(${hue},50%,30%);" title="${t.count}x dipakai · avg ${fmt(Math.round(t.totalViews/t.count))} views">
+          ${esc(t.tag)}<span class="tag-count">${t.count}</span>
+        </span>`;
+      }).join('')}
+    </div>
+
+    <div class="card-title">🏆 Top 20 Tag berdasarkan Rata-rata Views</div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+      ${byViews.map((t,i)=>{
+        const avgV = Math.round(t.totalViews/t.count);
+        const pct = avgV/maxViews*100;
+        return `<div style="display:grid;grid-template-columns:24px 160px 1fr 80px 40px;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);">#${i+1}</span>
+          <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(t.tag)}">${esc(t.tag)}</span>
+          <div style="height:6px;background:var(--border);border-radius:99px;overflow:hidden;">
+            <div style="height:6px;width:${pct}%;background:var(--blue);border-radius:99px;"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:11px;text-align:right;">${fmt(avgV)}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right;">${t.count}x</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── REVENUE TAB ──
+function renderRevenue() {
+  const el = document.getElementById('revenueContent');
+  if (!allVideos.length) { el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">Scrape channel dulu.</div>'; return; }
+
+  const totalViews = allVideos.reduce((a,v)=>a+parseInt(v.views||0),0);
+  const stats = channelData.statistics||{};
+
+  // CPM estimates by region/content type (USD)
+  const CPM_PRESETS = {
+    'Gaming': {low:1.5, mid:3.5, high:7},
+    'Edukasi/Tutorial': {low:3, mid:6, high:12},
+    'Finance/Bisnis': {low:8, mid:18, high:35},
+    'Tech/Review': {low:4, mid:9, high:18},
+    'Hiburan/Vlog': {low:1, mid:2.5, high:5},
+    'Masak/Kuliner': {low:2, mid:4, high:8},
+    'Kesehatan/Fitness': {low:3, mid:7, high:15},
+    'Berita': {low:2, mid:5, high:10},
+    'Musik': {low:0.5, mid:1.5, high:3},
+    'Umum': {low:1.5, mid:3.5, high:7},
+  };
+
+  const selectedCPM = CPM_PRESETS[document.getElementById('cpmCategory')?.value||'Umum'] || CPM_PRESETS['Umum'];
+  const rpmFactor = 0.45; // YouTube takes 45%, creator gets 55%
+
+  const calcRev = (views, cpm) => (views/1000) * cpm * rpmFactor;
+  const usdToIdr = 16000;
+
+  const rev = (views, cpm) => {
+    const usd = calcRev(views, cpm);
+    return `$${usd.toLocaleString('en',{minimumFractionDigits:0,maximumFractionDigits:0})} (Rp${Math.round(usd*usdToIdr).toLocaleString('id')})`;
+  };
+
+  const byViews = [...allVideos].sort((a,b)=>parseInt(b.views)-parseInt(a.views)).slice(0,10);
+
+  el.innerHTML = `
+    <div class="info-note">ℹ️ Estimasi pendapatan berdasarkan <strong>RPM (Revenue Per Mille)</strong>. Angka aktual bervariasi tergantung niche, negara penonton, musim, dan jenis iklan. YouTube mengambil 45% dari pendapatan iklan.</div>
+
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <label style="font-size:13px;font-weight:600;">Kategori Konten:</label>
+      <select id="cpmCategory" onchange="renderRevenue()" style="padding:8px 11px;border:1px solid var(--border-dark);border-radius:7px;font-family:var(--sans);font-size:13px;background:var(--bg);outline:none;">
+        ${Object.keys(CPM_PRESETS).map(k=>`<option value="${k}">${k}</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:var(--muted);">CPM: $${selectedCPM.low}–$${selectedCPM.high}</span>
+    </div>
+
+    <div class="cpm-grid">
+      <div class="stat-card"><div class="stat-label">Total Views</div><div class="stat-value">${fmt(totalViews)}</div><div class="stat-sub">${fmtFull(totalViews)}</div></div>
+      <div class="stat-card"><div class="stat-label">Estimasi (Low)</div><div class="stat-value" style="color:var(--muted);font-size:14px;">$${Math.round(calcRev(totalViews,selectedCPM.low)).toLocaleString()}</div><div class="stat-sub">CPM $${selectedCPM.low}</div></div>
+      <div class="stat-card"><div class="stat-label">Estimasi (Mid)</div><div class="stat-value" style="color:var(--green);font-size:14px;">$${Math.round(calcRev(totalViews,selectedCPM.mid)).toLocaleString()}</div><div class="stat-sub">CPM $${selectedCPM.mid}</div></div>
+      <div class="stat-card"><div class="stat-label">Estimasi (High)</div><div class="stat-value" style="color:var(--blue);font-size:14px;">$${Math.round(calcRev(totalViews,selectedCPM.high)).toLocaleString()}</div><div class="stat-sub">CPM $${selectedCPM.high}</div></div>
+      <div class="stat-card"><div class="stat-label">IDR (Mid est.)</div><div class="stat-value" style="font-size:13px;color:var(--green);">Rp${(Math.round(calcRev(totalViews,selectedCPM.mid))*usdToIdr).toLocaleString('id')}</div><div class="stat-sub">kurs Rp${usdToIdr.toLocaleString('id')}/USD</div></div>
+      <div class="stat-card"><div class="stat-label">Per Bulan (est.)</div><div class="stat-value" style="font-size:13px;">$${Math.round(calcRev(totalViews,selectedCPM.mid)/Math.max(1,allVideos.length)*30).toLocaleString()}</div><div class="stat-sub">asumsi konsisten</div></div>
+    </div>
+
+    <div class="card-title">🎬 Estimasi per Video (Top 10)</div>
+    <div style="margin-top:10px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:var(--bg);">
+          <th style="padding:8px 10px;text-align:left;color:var(--muted);font-weight:600;">Video</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-weight:600;">Views</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-weight:600;">Est. Low</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-weight:600;">Est. Mid</th>
+          <th style="padding:8px 10px;text-align:right;color:var(--muted);font-weight:600;">Est. High</th>
+        </tr></thead>
+        <tbody>
+          ${byViews.map(v=>{
+            const vv = parseInt(v.views||0);
+            return `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                <a href="https://youtube.com/watch?v=${v.id}" target="_blank" style="color:var(--text);text-decoration:none;">${esc(v.title)}</a>
+              </td>
+              <td style="padding:8px 10px;text-align:right;font-family:var(--mono);">${fmt(vv)}</td>
+              <td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--muted);">$${Math.round(calcRev(vv,selectedCPM.low)).toLocaleString()}</td>
+              <td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--green);font-weight:600;">$${Math.round(calcRev(vv,selectedCPM.mid)).toLocaleString()}</td>
+              <td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--blue);">$${Math.round(calcRev(vv,selectedCPM.high)).toLocaleString()}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── SUMMARY AI TAB ──
+async function generateSummary() {
+  const claudeKey = document.getElementById('claudeKeySummary').value.trim();
+  const lang = document.getElementById('summaryLang').value;
+  if (!claudeKey) { document.getElementById('summaryAlertArea').innerHTML='<div class="alert alert-error"><span>❌</span><span>Masukkan Claude API Key.</span></div>'; return; }
+  if (!allVideos.length) { document.getElementById('summaryAlertArea').innerHTML='<div class="alert alert-error"><span>❌</span><span>Scrape channel dulu.</span></div>'; return; }
+
+  document.getElementById('summaryAlertArea').innerHTML='';
+  document.getElementById('summaryLoadingEl').classList.remove('hidden');
+  document.getElementById('summaryContent').innerHTML='';
+
+  const stats = channelData.statistics||{};
+  const snippet = channelData.snippet||{};
+  const totalViews = allVideos.reduce((a,v)=>a+parseInt(v.views||0),0);
+  const totalLikes = allVideos.reduce((a,v)=>a+parseInt(v.likes||0),0);
+  const avgEng = allVideos.reduce((a,v)=>a+eng(v),0)/allVideos.length;
+  const top5 = [...allVideos].sort((a,b)=>parseInt(b.views)-parseInt(a.views)).slice(0,5);
+  const allTags = allVideos.flatMap(v=>v.tags||[]);
+  const tagFreq = {};
+  allTags.forEach(t=>{ tagFreq[t]=(tagFreq[t]||0)+1; });
+  const topTags = Object.entries(tagFreq).sort((a,b)=>b[1]-a[1]).slice(0,15).map(e=>e[0]);
+
+  const days=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const dayCounts = Array(7).fill(0);
+  allVideos.forEach(v=>{ if(v.publishedAt) dayCounts[new Date(v.publishedAt).getDay()]++; });
+  const bestDay = days[dayCounts.indexOf(Math.max(...dayCounts))];
+
+  const sentPos = allComments.filter(c=>c.sentiment==='pos').length;
+  const sentNeg = allComments.filter(c=>c.sentiment==='neg').length;
+  const sentNeu = allComments.filter(c=>c.sentiment==='neu').length;
+
+  const dataStr = `
+CHANNEL: ${snippet.title}
+Subscribers: ${parseInt(stats.subscriberCount||0).toLocaleString()}
+Total Views: ${totalViews.toLocaleString()}
+Total Videos: ${stats.videoCount}
+Avg Engagement Rate: ${avgEng.toFixed(2)}%
+Country: ${snippet.country||'Unknown'}
+Created: ${snippet.publishedAt?.slice(0,10)||'unknown'}
+Description: ${(snippet.description||'').slice(0,300)}
+
+TOP 5 VIDEOS:
+${top5.map((v,i)=>`${i+1}. "${v.title}" - ${parseInt(v.views).toLocaleString()} views, ${eng(v).toFixed(1)}% eng`).join('\n')}
+
+TOP TAGS: ${topTags.join(', ')}
+Best Upload Day: ${bestDay}
+Comment Sentiment: ${sentPos} positive, ${sentNeg} negative, ${sentNeu} neutral (${allComments.length} total analyzed)
+`;
+
+  const prompt = lang === 'id'
+    ? `Kamu adalah analis YouTube profesional. Berdasarkan data channel berikut, buat ringkasan komprehensif dalam Bahasa Indonesia dengan format JSON.
+
+DATA:
+${dataStr}
+
+Buat JSON dengan struktur persis ini (isi semua field dengan konten lengkap):
+{
+  "overview": "2-3 paragraf ringkasan channel, gaya konten, kekuatan utama",
+  "audience": "Deskripsi profil audiens target (usia, minat, demografi)",
+  "performance": "Analisis performa konten — apa yang bekerja, apa yang tidak",
+  "bestContent": ["Rekomendasi tipe konten 1", "tipe konten 2", "tipe konten 3"],
+  "uploadTips": "Rekomendasi strategi upload berdasarkan data",
+  "seoTips": ["SEO tip 1", "SEO tip 2", "SEO tip 3"],
+  "brandOpportunities": "Jenis brand/sponsor yang cocok untuk channel ini",
+  "weaknesses": "Area yang perlu diperbaiki",
+  "growth": "Strategi pertumbuhan subscriber yang direkomendasikan"
+}`
+    : `You are a professional YouTube analyst. Based on the channel data below, create a comprehensive analysis in English as JSON.
+
+DATA:
+${dataStr}
+
+Return JSON with exactly this structure:
+{
+  "overview": "2-3 paragraph channel summary, content style, key strengths",
+  "audience": "Target audience profile description (age, interests, demographics)",
+  "performance": "Content performance analysis — what works, what doesn't",
+  "bestContent": ["Content type recommendation 1", "type 2", "type 3"],
+  "uploadTips": "Upload strategy recommendations based on data",
+  "seoTips": ["SEO tip 1", "SEO tip 2", "SEO tip 3"],
+  "brandOpportunities": "Types of brands/sponsors suitable for this channel",
+  "weaknesses": "Areas that need improvement",
+  "growth": "Recommended subscriber growth strategy"
+}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: 'You are a YouTube analytics expert. Always respond with valid JSON only, no markdown fences.',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    document.getElementById('summaryLoadingEl').classList.add('hidden');
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content.map(b=>b.text||'').join('').trim();
+    const clean = raw.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    const r = JSON.parse(clean);
+
+    const labels = lang==='id'
+      ? {overview:'📊 Ringkasan',audience:'👥 Profil Audiens',performance:'📈 Analisis Performa',bestContent:'🎬 Konten Terbaik',uploadTips:'📅 Tips Upload',seoTips:'🏷️ Tips SEO',brandOpportunities:'💼 Peluang Brand',weaknesses:'⚠️ Area Perbaikan',growth:'🚀 Strategi Pertumbuhan'}
+      : {overview:'📊 Overview',audience:'👥 Audience Profile',performance:'📈 Performance Analysis',bestContent:'🎬 Best Content Types',uploadTips:'📅 Upload Tips',seoTips:'🏷️ SEO Tips',brandOpportunities:'💼 Brand Opportunities',weaknesses:'⚠️ Areas for Improvement',growth:'🚀 Growth Strategy'};
+
+    document.getElementById('summaryContent').innerHTML = `
+      <div style="border:1px solid var(--border);border-radius:10px;padding:20px;background:var(--surface);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+          ${channelData.snippet?.thumbnails?.default?.url?`<img src="${channelData.snippet.thumbnails.default.url}" style="width:36px;height:36px;border-radius:50%;">`:''}
+          <div>
+            <div style="font-weight:600;font-size:14px;">${esc(snippet.title||'')}</div>
+            <div style="font-size:11px;color:var(--muted);">✨ Dianalisis oleh Claude AI · ${new Date().toLocaleDateString('id-ID')}</div>
+          </div>
+          <button onclick="exportSummary()" class="btn btn-outline" style="margin-left:auto;font-size:12px;padding:5px 10px;">⬇ Export</button>
+        </div>
+        ${Object.entries(r).map(([key,val])=>`
+          <div class="summary-section">
+            <h3>${labels[key]||key}</h3>
+            ${Array.isArray(val)
+              ? `<ul>${val.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`
+              : `<p>${esc(val)}</p>`}
+          </div>`).join('')}
+      </div>`;
+
+    // Store for export
+    window._lastSummary = {channel: snippet.title, date: new Date().toISOString(), data: r, labels};
+  } catch(e) {
+    document.getElementById('summaryLoadingEl').classList.add('hidden');
+    document.getElementById('summaryAlertArea').innerHTML=`<div class="alert alert-error"><span>❌</span><span>${esc(e.message)}</span></div>`;
+  }
+}
+
+function exportSummary() {
+  if (!window._lastSummary) return;
+  const {channel, date, data, labels} = window._lastSummary;
+  let txt = `RINGKASAN CHANNEL: ${channel}\nDigenerate: ${new Date(date).toLocaleString('id-ID')}\n\n`;
+  Object.entries(data).forEach(([k,v]) => {
+    txt += `== ${labels[k]||k} ==\n`;
+    txt += Array.isArray(v) ? v.map(i=>`- ${i}`).join('\n') : v;
+    txt += '\n\n';
+  });
+  dl(txt, `${channel}_summary.txt`, 'text/plain');
+}
+
+// ── COMPARE CHANNELS TAB ──
+async function startCompare() {
+  const ytKey = document.getElementById('apiKey').value.trim();
+  if (!ytKey) { document.getElementById('compareAlertArea').innerHTML='<div class="alert alert-error"><span>❌</span><span>Masukkan YouTube API Key di form Konfigurasi.</span></div>'; return; }
+
+  const inputs = [
+    document.getElementById('compareInput1').value.trim(),
+    document.getElementById('compareInput2').value.trim(),
+    document.getElementById('compareInput3').value.trim(),
+  ].filter(Boolean);
+
+  // Also include current scraped channel if any
+  if (!inputs.length && !channelData.id) {
+    document.getElementById('compareAlertArea').innerHTML='<div class="alert alert-error"><span>❌</span><span>Masukkan minimal 1 channel untuk dibandingkan.</span></div>';
+    return;
+  }
+
+  document.getElementById('compareAlertArea').innerHTML='';
+  document.getElementById('compareContent').innerHTML='';
+  document.getElementById('compareLoadingEl').classList.remove('hidden');
+
+  const channels = [];
+
+  // Include current channel if available
+  if (channelData.id) {
+    channels.push({
+      id: channelData.id,
+      title: channelData.snippet?.title||'',
+      avatar: channelData.snippet?.thumbnails?.default?.url||'',
+      handle: channelData.snippet?.customUrl||'',
+      subs: parseInt(channelData.statistics?.subscriberCount||0),
+      views: parseInt(channelData.statistics?.viewCount||0),
+      videos: parseInt(channelData.statistics?.videoCount||0),
+      country: channelData.snippet?.country||'—',
+      created: channelData.snippet?.publishedAt||'',
+      avgViews: allVideos.length ? Math.round(allVideos.reduce((a,v)=>a+parseInt(v.views||0),0)/allVideos.length) : 0,
+      avgLikes: allVideos.length ? Math.round(allVideos.reduce((a,v)=>a+parseInt(v.likes||0),0)/allVideos.length) : 0,
+      avgEng: allVideos.length ? allVideos.reduce((a,v)=>a+eng(v),0)/allVideos.length : 0,
+    });
+  }
+
+  for (let i=0; i<Math.min(inputs.length, 3); i++) {
+    document.getElementById('compareLoadingText').textContent = `Mengambil data channel ${i+1}/${inputs.length}...`;
+    try {
+      const ch = await getChannel(ytKey, inputs[i]);
+      const uploadsId = ch.contentDetails?.relatedPlaylists?.uploads;
+      let vids = [];
+      if (uploadsId) {
+        try { vids = await getVideos(ytKey, uploadsId, 25); } catch(e) {}
+      }
+      channels.push({
+        id: ch.id,
+        title: ch.snippet?.title||'',
+        avatar: ch.snippet?.thumbnails?.default?.url||'',
+        handle: ch.snippet?.customUrl||'',
+        subs: parseInt(ch.statistics?.subscriberCount||0),
+        views: parseInt(ch.statistics?.viewCount||0),
+        videos: parseInt(ch.statistics?.videoCount||0),
+        country: ch.snippet?.country||'—',
+        created: ch.snippet?.publishedAt||'',
+        avgViews: vids.length ? Math.round(vids.reduce((a,v)=>a+parseInt(v.views||0),0)/vids.length) : 0,
+        avgLikes: vids.length ? Math.round(vids.reduce((a,v)=>a+parseInt(v.likes||0),0)/vids.length) : 0,
+        avgEng: vids.length ? vids.reduce((a,v)=>a+eng(v),0)/vids.length : 0,
+      });
+    } catch(e) {
+      document.getElementById('compareAlertArea').innerHTML=`<div class="alert alert-info"><span>⚠️</span><span>Channel "${inputs[i]}" tidak ditemukan, dilewati.</span></div>`;
+    }
+  }
+
+  document.getElementById('compareLoadingEl').classList.add('hidden');
+  if (channels.length < 1) { document.getElementById('compareAlertArea').innerHTML='<div class="alert alert-error"><span>❌</span><span>Tidak ada channel yang berhasil diambil.</span></div>'; return; }
+
+  // Render comparison table
+  const metrics = [
+    {label:'Subscribers', key:'subs', fmt:fmt, higher:true},
+    {label:'Total Views', key:'views', fmt:fmt, higher:true},
+    {label:'Total Video', key:'videos', fmt:n=>n.toLocaleString('id'), higher:true},
+    {label:'Avg Views/Video', key:'avgViews', fmt:fmt, higher:true},
+    {label:'Avg Likes/Video', key:'avgLikes', fmt:fmt, higher:true},
+    {label:'Avg Engagement', key:'avgEng', fmt:n=>n.toFixed(2)+'%', higher:true},
+    {label:'Negara', key:'country', fmt:s=>s, higher:false},
+    {label:'Bergabung', key:'created', fmt:s=>s?new Date(s).getFullYear():'—', higher:false},
+  ];
+
+  document.getElementById('compareContent').innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Metrik</th>
+            ${channels.map(ch=>`
+              <th>
+                <div class="compare-ch-header">
+                  ${ch.avatar?`<img src="${ch.avatar}" class="compare-ch-avatar" alt="">`:'<div class="compare-ch-avatar" style="background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;">▶</div>'}
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:var(--text);">${esc(ch.title)}</div>
+                    <div style="font-size:10px;color:var(--muted);">${ch.handle?'@'+ch.handle.replace('@',''):ch.id.slice(0,10)}</div>
+                  </div>
+                </div>
+              </th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${metrics.map(m=>{
+            const vals = channels.map(ch=>m.key==='avgEng'?ch[m.key]:ch[m.key]);
+            const bestVal = m.higher ? Math.max(...vals.filter(v=>typeof v==='number')) : null;
+            return `<tr>
+              <td style="font-weight:500;color:var(--muted);font-size:12px;">${m.label}</td>
+              ${channels.map((ch,i)=>{
+                const v = ch[m.key];
+                const isBest = m.higher && typeof v==='number' && v===bestVal && channels.length>1;
+                return `<td class="${isBest?'best':''}" style="font-family:var(--mono);font-size:13px;">
+                  ${isBest?'🏆 ':''}${m.fmt(v)}
+                </td>`;
+              }).join('')}
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);">🏆 = nilai terbaik di antara channel yang dibandingkan · Avg Views/Likes/Engagement berdasarkan 25 video terakhir untuk channel baru</div>
+  `;
+}
+
+// Enter key
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('channelInput').addEventListener('keydown', e => { if(e.key==='Enter') startScrape(); });
+  document.getElementById('apiKey').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('channelInput').focus(); });
+  // Reset Claude API check when key changes
+  const ckEl = document.getElementById('claudeKey');
+  if (ckEl) ckEl.addEventListener('input', () => { _claudeApiOk = null; });
+});
+</script>
+</body>
+</html>
