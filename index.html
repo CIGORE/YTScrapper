@@ -1533,9 +1533,6 @@ function renderEmailTab() {
       <button class="btn btn-green" onclick="exportEmails()" style="font-size:12px;padding:5px 10px;">⬇ Export CSV</button>
     </div>
     <div id="contactTabContent">${tabContent('email')}</div>
-    <script>
-      window._contactTabContent = ${JSON.stringify({email: tabContent('email'), phone: tabContent('phone'), social: tabContent('social')})};
-    <\/script>
   `;
 
   // Store for tab switching
